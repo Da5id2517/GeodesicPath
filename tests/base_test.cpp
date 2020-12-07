@@ -2,10 +2,36 @@
 #include "catch_amalgamated.hpp"
 #include <vector>
 #include "../mesh.h"
+#include "../utils.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
+
+
+
+TEST_CASE("assignElementIndices tests")
+{
+    SECTION("Triangle base case")
+    {
+        auto returned_collection = assignElementIndices(3,3,1);
+        std::vector<std::vector<int>> expected_collection = {{0,1,2},{0,1,2},{0}};
+        REQUIRE(returned_collection == expected_collection);
+    }
+
+    SECTION("Square base case")
+    {
+        auto returned_collection = assignElementIndices(4,4,1);
+        std::vector<std::vector<int>> expected_collection = {{0,1,2,3},{0,1,2,3},{0}};
+        REQUIRE(returned_collection == expected_collection);
+    }
+
+    SECTION("Invalid arguments throw an exception")
+    {
+        REQUIRE_THROWS_AS(assignElementIndices(0,0,5), std::invalid_argument);
+        REQUIRE_NOTHROW(assignElementIndices(3,3,1));
+    }
+}
 
 
 TEST_CASE("Base functionality tests")
@@ -62,3 +88,5 @@ TEST_CASE("Base functionality tests")
 
     output.close();
 }
+
+
