@@ -9,7 +9,9 @@ std::vector<std::vector<int>> assignElementIndices(
         int number_of_edges,
         int number_of_faces);
 
-auto buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>>);
+std::vector<std::vector<int>> buildVertexEdgeAdjacencyMatrix(
+        std::vector<std::vector<int>> &indices,
+        const std::vector<std::tuple<int, int>> &simplices);
 auto buildEdgeFacesAdjacencyMatrix(std::vector<std::vector<int>>);
 
 #endif //RSPROJECT_UTILS_H
