@@ -54,6 +54,11 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
             std::make_tuple(3,0)
     };
 
+    const std::vector<std::tuple<int, int, int>> test_triangle_face_simplices = {{0,1,2}};
+
+    //TODO: edge face accounts for only 3 simplex, and the algorithm is copy pasta.
+    const std::vector<std::tuple<int, int, int, int>> test_square_face_simplices = {{0,1,2,3}};
+
     SECTION("A0 for test_triangle")
     {
         int expected_matrix[3][3] = {
@@ -87,6 +92,22 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
         for(int i = 0; i < 4; i++)
         {
             for(int j = 0; j < 4; j++)
+            {
+                REQUIRE(returned_matrix[i][j] == expected_matrix[i][j]);
+            }
+        }
+    }
+
+    SECTION("A1 for test_triangle")
+    {
+        int expected_matrix [1][3] = {{1, 1, 1}};
+        auto returned_matrix = buildEdgeFaceAdjacencyMatrix(
+                test_triangle_indices,
+                test_triangle_face_simplices);
+
+        for(int i = 0; i < 1; i++)
+        {
+            for(int j = 0; j < 3; j++)
             {
                 REQUIRE(returned_matrix[i][j] == expected_matrix[i][j]);
             }

@@ -47,21 +47,6 @@ std::vector<std::vector<int>> buildVertexEdgeAdjacencyMatrix(
         const std::vector<std::tuple<int, int>> &twoSimplices)
 {
     auto [rows, columns] = std::make_tuple(indices[1].size(), indices[0].size());
-
-    // TODO: this is prone to breaking easily.
-//    auto max_amount_of_edges = columns * (columns - 1)/2;
-//    auto edges_provided = twoSimplices.size();
-//    if(max_amount_of_edges > edges_provided)
-//    {
-//        throw std::invalid_argument(
-//                "Mesh with "
-//                + std::to_string(columns)
-//                + " vertices cannot have "
-//                + std::to_string(edges_provided)
-//                + " edges.");
-//    }
-
-
     auto edge_indices_it = indices[1].begin();
     std::vector<std::vector<int>> non_sparse_adjacency_matrix(rows);
 
@@ -75,6 +60,30 @@ std::vector<std::vector<int>> buildVertexEdgeAdjacencyMatrix(
         non_sparse_adjacency_matrix[*edge_indices_it][std::get<0>(simplex)] = 1;
         non_sparse_adjacency_matrix[*edge_indices_it][std::get<1>(simplex)] = 1;
         edge_indices_it++;
+    }
+
+    return non_sparse_adjacency_matrix;
+}
+
+std::vector<std::vector<int>> buildEdgeFaceAdjacencyMatrix(
+        std::vector<std::vector<int>> &indices,
+        const std::vector<std::tuple<int, int, int>> &threeSimplices)
+{
+    auto [rows, columns] = std::make_tuple(indices[2].size(), indices[1].size());
+    auto face_indices_it = indices[2].begin();
+    std::vector<std::vector<int>> non_sparse_adjacency_matrix(rows);
+
+    for(int i = 0; i < rows; i++)
+    {
+        non_sparse_adjacency_matrix[i].resize(columns);
+    }
+
+    for(auto simplex : threeSimplices)
+    {
+        non_sparse_adjacency_matrix[*face_indices_it][std::get<0>(simplex)] = 1;
+        non_sparse_adjacency_matrix[*face_indices_it][std::get<1>(simplex)] = 1;
+        non_sparse_adjacency_matrix[*face_indices_it][std::get<2>(simplex)] = 1;
+        face_indices_it++;
     }
 
     return non_sparse_adjacency_matrix;
