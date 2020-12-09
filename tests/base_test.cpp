@@ -3,11 +3,43 @@
 #include <vector>
 #include "../mesh.h"
 #include "../utils.h"
+#include "../DenseMatrix.h"
+#include "../SparseMatrix.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 
+
+
+TEST_CASE("DenseMatrix class tests")
+{
+    SECTION("No argument constructor returns empty vector.")
+    {
+        std::vector<std::vector<int>> expected_result = { };
+        auto returned_value = DenseMatrix();
+        REQUIRE(returned_value.getData() == expected_result);
+    }
+
+    SECTION("Basic constructor test")
+    {
+        std::vector<std::vector<int>> expected_result = {{1,2,3}, {3,4,5}};
+        auto returned_matrix = DenseMatrix(expected_result);
+        REQUIRE(returned_matrix.getData() == expected_result);
+    }
+
+}
+
+TEST_CASE("SparseMatrix class tests")
+{
+    SECTION("Dense to sparse conversion.")
+    {
+        DenseMatrix testDenseMatrix({{1,0,0}, {0,1,0}, {0,0,1}});
+        std::vector<std::vector<int>> expected_matrix = {{0,1,2},{0,1,2},{1,1,1}};
+        auto returned_matrix = SparseMatrix(testDenseMatrix);
+        REQUIRE(returned_matrix.getData() == expected_matrix);
+    }
+}
 
 
 TEST_CASE("assignElementIndices tests")
