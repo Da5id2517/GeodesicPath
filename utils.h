@@ -1,16 +1,22 @@
 #ifndef RSPROJECT_UTILS_H
 #define RSPROJECT_UTILS_H
 
+#include <numeric>
+#include <string>
+#include <unordered_set>
 #include <vector>
-#include "DenseMatrix.h"
+#include "SparseMatrix.h"
 
 
 std::vector<std::vector<int>> assignElementIndices(int number_of_vertices, int number_of_edges, int number_of_faces);
 
-DenseMatrix buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>> &indices,
-                                           const std::vector<std::tuple<int, int>> &twoSimplices);
+// add simplex checker
+bool simplexChecker(std::vector<std::vector<int>> &simplex, int k = 0);
 
-DenseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices,
-                                         const std::vector<std::vector<int>> &kSimplices);
+SparseMatrix buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>> &indices,
+                                            std::vector<std::vector<int>> &twoSimplices);
+
+SparseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices,
+                                          std::vector<std::vector<int>> &kSimplices);
 
 #endif //RSPROJECT_UTILS_H

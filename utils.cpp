@@ -1,5 +1,3 @@
-#include <numeric>
-#include <string>
 #include "utils.h"
 
 std::vector<std::vector<int>> assignElementIndices(
@@ -43,34 +41,33 @@ std::vector<std::vector<int>> assignElementIndices(
     return result_collection;
 }
 
-DenseMatrix buildVertexEdgeAdjacencyMatrix(
+SparseMatrix buildVertexEdgeAdjacencyMatrix(
         std::vector<std::vector<int>> &indices,
-        const std::vector<std::tuple<int, int>> &twoSimplices)
+        std::vector<std::vector<int>> &twoSimplices)
 {
+    //TODO:this check doesnt guarantee that simplex wont have exactly two vertices
+    simplexChecker(twoSimplices, 2);
     auto [rows, columns] = std::make_tuple(indices[1].size(), indices[0].size());
     auto edge_indices_it = indices[1].begin();
     DenseMatrix denseMatrix(rows, columns);
 
     for(auto simplex : twoSimplices)
     {
-        denseMatrix(*edge_indices_it, std::get<0>(simplex)) = 1;
-        denseMatrix(*edge_indices_it, std::get<1>(simplex)) = 1;
+        denseMatrix(*edge_indices_it, simplex[0]) = 1;
+        denseMatrix(*edge_indices_it, simplex[1]) = 1;
         edge_indices_it++;
     }
 
-    return denseMatrix;
+    return SparseMatrix(denseMatrix);
 }
 
-DenseMatrix buildEdgeFaceAdjacencyMatrix(
+SparseMatrix buildEdgeFaceAdjacencyMatrix(
         std::vector<std::vector<int>> &indices,
-        const std::vector<std::vector<int>> &kSimplices)
+        std::vector<std::vector<int>> &kSimplices)
 {
-    //TODO: add a function that checks if a simplex is valid.
-    // simplices must have at least three elements to form a face.
-    if(std::count_if(kSimplices.begin(), kSimplices.end(), [](auto simplex){return simplex.size() < 3;}))
-    {
-        throw std::invalid_argument("Faces can only be formed with three or more edges.");
-    }
+    // faces can only be formed by at least 3 edges
+    simplexChecker(kSimplices, 3);
+
     auto [rows, columns] = std::make_tuple(indices[2].size(), indices[1].size());
     auto face_indices_it = indices[2].begin();
     DenseMatrix denseMatrix(rows, columns);
@@ -84,5 +81,29 @@ DenseMatrix buildEdgeFaceAdjacencyMatrix(
         face_indices_it++;
     }
 
-    return denseMatrix;
+    return SparseMatrix(denseMatrix);
+}
+
+bool simplexChecker(std::vector<std::vector<int>> &simplices, int k)
+{
+    if(std::count_if(simplices.begin(), simplices.end(), [k](auto tuple){return tuple.size() < k;}))
+    {
+        throw std::invalid_argument("All simplices must have at least " + std::to_string(k) + " elements.");
+    }
+
+    auto lambda = [](std::vector<int> &tuple)
+            {
+        std::unordered_set<int> tmp;
+        tmp.insert(tuple.cbegin(), tuple.cend());
+        return tuple.size() > tmp.size();
+            };
+
+    if(std::count_if(simplices.begin(), simplices.end(), lambda))
+    {
+        throw std::invalid_argument("Tuples cannot contain duplicates.");
+    }
+
+    //TODO: simplex cannot contain duplicate tuples.
+
+    return true;
 }

@@ -49,5 +49,6 @@ int SparseMatrix::operator()(int i, int j)
             return std::get<2>(tuple);
         }
     }
+    return 0;
 }
 
