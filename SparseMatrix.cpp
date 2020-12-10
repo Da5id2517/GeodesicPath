@@ -2,38 +2,52 @@
 
 SparseMatrix::SparseMatrix(DenseMatrix matrix)
 {
-    int size = 0;
-    data.resize(3);
+    // use rows and columns to check if index is out of bounds.
+    this->rows = matrix.getRows();
+    this->columns = matrix.getColumns();
+
+    int non_null_values = 0;
 
     for(auto row : matrix.getData())
     {
-        size += std::count_if(std::begin(row), std::end(row), [](auto x){return x != 0;});
+        non_null_values += std::count_if(std::begin(row), std::end(row), [](auto x){return x != 0;});
     }
 
-    for(auto & array : data)
-    {
-        array.resize(size);
-    }
+    data.resize(non_null_values);
 
     int k = 0;
     for(int i = 0; i < matrix.getRows(); i ++)
     {
         for(int j = 0; j < matrix.getColumns(); j++)
         {
-            if(matrix(i, j) != 0)
+            auto value = matrix(i,j);
+            if(value != 0)
             {
-                data[0][k]= i;
-                data[1][k] = j;
-                data[2][k] = 1;
+                data[k] = std::make_tuple(i, j, value);
                 k++;
             }
         }
     }
 }
 
-std::vector<std::vector<int>> SparseMatrix::getData()
+std::vector<std::tuple<int, int, int>> SparseMatrix::getData()
 {
     return this->data;
 }
 
+int SparseMatrix::operator()(int i, int j)
+{
+    if(i >= rows || j >= columns)
+    {
+        throw std::invalid_argument("Index out of bounds.");
+    }
+
+    for(auto tuple : data)
+    {
+        if(std::get<0>(tuple) == i && std::get<1>(tuple) == j)
+        {
+            return std::get<2>(tuple);
+        }
+    }
+}
 

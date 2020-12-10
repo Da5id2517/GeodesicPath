@@ -3,7 +3,6 @@
 #include <vector>
 #include "../mesh.h"
 #include "../utils.h"
-#include "../DenseMatrix.h"
 #include "../SparseMatrix.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
@@ -14,6 +13,9 @@
 
 TEST_CASE("DenseMatrix class tests")
 {
+    std::vector<std::vector<int>> test_matrix_input = {{1,2,3}, {2,3,4}, {5,6,7}};
+    DenseMatrix test_dense_matrix(test_matrix_input);
+
     SECTION("No argument constructor returns empty vector.")
     {
         std::vector<std::vector<int>> expected_result = { };
@@ -21,23 +23,28 @@ TEST_CASE("DenseMatrix class tests")
         REQUIRE(returned_value.getData() == expected_result);
     }
 
-    SECTION("Basic constructor test")
+    SECTION("Accessing elements throws invalid argument if index out of bounds returns element otherwise.")
     {
-        std::vector<std::vector<int>> expected_result = {{1,2,3}, {3,4,5}};
-        auto returned_matrix = DenseMatrix(expected_result);
-        REQUIRE(returned_matrix.getData() == expected_result);
+        REQUIRE(test_dense_matrix(0,0) == 1);
+        REQUIRE_THROWS_AS(test_dense_matrix(4,2), std::invalid_argument);
     }
-
 }
 
 TEST_CASE("SparseMatrix class tests")
 {
+    DenseMatrix testDenseMatrix({{1,0,0}, {0,1,0}, {0,0,1}});
+    auto returned_matrix = SparseMatrix(testDenseMatrix);
+
     SECTION("Dense to sparse conversion.")
     {
-        DenseMatrix testDenseMatrix({{1,0,0}, {0,1,0}, {0,0,1}});
-        std::vector<std::vector<int>> expected_matrix = {{0,1,2},{0,1,2},{1,1,1}};
-        auto returned_matrix = SparseMatrix(testDenseMatrix);
+        std::vector<std::tuple<int, int, int>> expected_matrix = {{0,0,1},{1,1,1},{2,2,1}};
         REQUIRE(returned_matrix.getData() == expected_matrix);
+    }
+
+    SECTION("Accessing elements throws invalid argument if index out of bounds returns element otherwise.")
+    {
+        REQUIRE(returned_matrix(2,2) == 1);
+        REQUIRE_THROWS_AS(returned_matrix(3,1), std::invalid_argument);
     }
 }
 
@@ -72,24 +79,11 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
     auto test_triangle_indices = assignElementIndices(3,3,1);
     auto test_square_indices = assignElementIndices(4,4,1);
 
-    //TODO find a cleaner solution for this.
-    const std::vector<std::tuple<int,int>> test_triangle_simplicies = {
-            std::make_tuple(0,1),
-            std::make_tuple(1,2),
-            std::make_tuple(2,0)
-    };
+    const std::vector<std::tuple<int,int>> test_triangle_simplicies = {{0,1},{1,2},{2,0}};
+    const std::vector<std::tuple<int, int>> test_square_simplices = {{0,1},{1,2},{2,3},{3,0}};
 
-    const std::vector<std::tuple<int, int>> test_square_simplices = {
-            std::make_tuple(0,1),
-            std::make_tuple(1,2),
-            std::make_tuple(2,3),
-            std::make_tuple(3,0)
-    };
-
-    const std::vector<std::tuple<int, int, int>> test_triangle_face_simplices = {{0,1,2}};
-
-    //TODO: edge face accounts for only 3 simplex, and the algorithm is copy pasta.
-    const std::vector<std::tuple<int, int, int, int>> test_square_face_simplices = {{0,1,2,3}};
+    const std::vector<std::vector<int>> test_triangle_face_simplices = {{0,1,2}};
+    const std::vector<std::vector<int>> test_square_face_simplices = {{0,1,2,3}};
 
     SECTION("A0 for test_triangle")
     {
@@ -105,7 +99,7 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
         {
             for(int j = 0; j < 3; j++)
             {
-                REQUIRE(returned_matrix[i][j] == expected_matrix[i][j]);
+                REQUIRE(returned_matrix(i,j) == expected_matrix[i][j]);
             }
         }
     }
@@ -125,7 +119,7 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
         {
             for(int j = 0; j < 4; j++)
             {
-                REQUIRE(returned_matrix[i][j] == expected_matrix[i][j]);
+                REQUIRE(returned_matrix(i,j) == expected_matrix[i][j]);
             }
         }
     }
@@ -133,15 +127,27 @@ TEST_CASE("buildVertexEdgeAdjacencyMatrix tests")
     SECTION("A1 for test_triangle")
     {
         int expected_matrix [1][3] = {{1, 1, 1}};
-        auto returned_matrix = buildEdgeFaceAdjacencyMatrix(
-                test_triangle_indices,
-                test_triangle_face_simplices);
+        auto returned_matrix = buildEdgeFaceAdjacencyMatrix(test_triangle_indices,test_triangle_face_simplices);
 
         for(int i = 0; i < 1; i++)
         {
             for(int j = 0; j < 3; j++)
             {
-                REQUIRE(returned_matrix[i][j] == expected_matrix[i][j]);
+                REQUIRE(returned_matrix(i,j) == expected_matrix[i][j]);
+            }
+        }
+    }
+
+    SECTION("A1 for test_square")
+    {
+        int expected_matrix [1][4] = {{1,1,1,1}};
+        auto returned_matrix = buildEdgeFaceAdjacencyMatrix(test_square_indices, test_square_face_simplices);
+
+        for(int i = 0 ; i < 1; i++)
+        {
+            for(int j = 0; j < 4; j++)
+            {
+                REQUIRE(returned_matrix(i,j) == expected_matrix[i][j]);
             }
         }
     }

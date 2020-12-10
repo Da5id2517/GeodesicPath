@@ -14,6 +14,18 @@ DenseMatrix::DenseMatrix(std::vector<std::vector<int>> data)
     }
 }
 
+DenseMatrix::DenseMatrix(int row, int column)
+{
+    this->rows = row;
+    this->columns = column;
+
+    data.resize(rows);
+    for(int i = 0; i < rows ; i++)
+    {
+        data[i].resize(columns);
+    }
+}
+
 int DenseMatrix::getColumns() const
 {
     return this->columns;

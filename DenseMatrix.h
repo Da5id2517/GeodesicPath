@@ -7,6 +7,7 @@ class DenseMatrix
 {
 public:
     DenseMatrix(std::vector<std::vector<int>> data = {});
+    DenseMatrix(int row, int column);
 
     int getRows() const;
     int getColumns() const;

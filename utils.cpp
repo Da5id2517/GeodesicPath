@@ -7,6 +7,7 @@ std::vector<std::vector<int>> assignElementIndices(
         int number_of_edges,
         int number_of_faces)
 {
+    //TODO: right side of the formula should be 2 - 2g
     if(number_of_vertices - number_of_edges + number_of_faces != 1)
         throw std::invalid_argument("The arguments provided must satisfy Euler's formula.");
     if(number_of_vertices < 0 || number_of_edges < 0 || number_of_faces < 0)
@@ -42,49 +43,46 @@ std::vector<std::vector<int>> assignElementIndices(
     return result_collection;
 }
 
-std::vector<std::vector<int>> buildVertexEdgeAdjacencyMatrix(
+DenseMatrix buildVertexEdgeAdjacencyMatrix(
         std::vector<std::vector<int>> &indices,
         const std::vector<std::tuple<int, int>> &twoSimplices)
 {
     auto [rows, columns] = std::make_tuple(indices[1].size(), indices[0].size());
     auto edge_indices_it = indices[1].begin();
-    std::vector<std::vector<int>> non_sparse_adjacency_matrix(rows);
-
-    for(int i = 0; i < rows; i++)
-    {
-        non_sparse_adjacency_matrix[i].resize(columns);
-    }
+    DenseMatrix denseMatrix(rows, columns);
 
     for(auto simplex : twoSimplices)
     {
-        non_sparse_adjacency_matrix[*edge_indices_it][std::get<0>(simplex)] = 1;
-        non_sparse_adjacency_matrix[*edge_indices_it][std::get<1>(simplex)] = 1;
+        denseMatrix(*edge_indices_it, std::get<0>(simplex)) = 1;
+        denseMatrix(*edge_indices_it, std::get<1>(simplex)) = 1;
         edge_indices_it++;
     }
 
-    return non_sparse_adjacency_matrix;
+    return denseMatrix;
 }
 
-std::vector<std::vector<int>> buildEdgeFaceAdjacencyMatrix(
+DenseMatrix buildEdgeFaceAdjacencyMatrix(
         std::vector<std::vector<int>> &indices,
-        const std::vector<std::tuple<int, int, int>> &threeSimplices)
+        const std::vector<std::vector<int>> &kSimplices)
 {
+    //TODO: add a function that checks if a simplex is valid.
+    // simplices must have at least three elements to form a face.
+    if(std::count_if(kSimplices.begin(), kSimplices.end(), [](auto simplex){return simplex.size() < 3;}))
+    {
+        throw std::invalid_argument("Faces can only be formed with three or more edges.");
+    }
     auto [rows, columns] = std::make_tuple(indices[2].size(), indices[1].size());
     auto face_indices_it = indices[2].begin();
-    std::vector<std::vector<int>> non_sparse_adjacency_matrix(rows);
+    DenseMatrix denseMatrix(rows, columns);
 
-    for(int i = 0; i < rows; i++)
+    for(auto &simplex : kSimplices)
     {
-        non_sparse_adjacency_matrix[i].resize(columns);
-    }
-
-    for(auto simplex : threeSimplices)
-    {
-        non_sparse_adjacency_matrix[*face_indices_it][std::get<0>(simplex)] = 1;
-        non_sparse_adjacency_matrix[*face_indices_it][std::get<1>(simplex)] = 1;
-        non_sparse_adjacency_matrix[*face_indices_it][std::get<2>(simplex)] = 1;
+        for(auto element : simplex)
+        {
+            denseMatrix(*face_indices_it, element) = 1;
+        }
         face_indices_it++;
     }
 
-    return non_sparse_adjacency_matrix;
+    return denseMatrix;
 }
