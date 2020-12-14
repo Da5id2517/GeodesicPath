@@ -19,4 +19,6 @@ SparseMatrix buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>> &indic
 SparseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices,
                                           std::vector<std::vector<int>> &kSimplices);
 
+std::vector<int> buildVertexVector(std::vector<int> &simplices, std::vector<int> &indices);
+
 #endif //RSPROJECT_UTILS_H

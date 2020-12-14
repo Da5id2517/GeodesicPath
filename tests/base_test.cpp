@@ -2,11 +2,29 @@
 #include "catch_amalgamated.hpp"
 #include "../mesh.h"
 #include "../utils.h"
+#include "../Face.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 
+
+TEST_CASE("Face class tests")
+{
+    SECTION("Edge constructor")
+    {
+        auto test_vertex1 = Vertex();
+        auto test_vertex2 = Vertex(1.0, 1.0, 1);
+        auto test_vertex3 = Vertex(1.0, 0.0, 2);
+        auto test_edge1 = Edge(test_vertex1, test_vertex2, 0);
+        auto test_edge2 = Edge(test_vertex2, test_vertex3, 1);
+        auto test_edge3 = Edge(test_vertex3, test_vertex1, 2);
+        std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
+        auto test_face = Face(edges, 0);
+
+        REQUIRE(test_face.dimension() == 2);
+    }
+}
 
 TEST_CASE("simplexChecker tests")
 {
@@ -163,6 +181,31 @@ TEST_CASE("A0 and A1 tests")
     }
 }
 
+TEST_CASE("buildVertexVector tests")
+{
+    auto indices = assignElementIndices(5,8,4);
+
+    SECTION("Improper subset dimension throws invalid argument.")
+    {
+        std::vector<int> faulty_subset = {0,1,2,3,4,5,6};
+        REQUIRE_THROWS_AS(buildVertexVector(faulty_subset, indices[0]), std::invalid_argument);
+    }
+
+    SECTION("Simplices provided must be a subset of indices.")
+    {
+        std::vector<int> subset_out_of_bounds = {4,-2,1};
+        REQUIRE_THROWS_AS(buildVertexVector(subset_out_of_bounds, indices[0]), std::invalid_argument);
+    }
+
+    SECTION("Base functionality test")
+    {
+        std::vector<int> subset = {3,0,1};
+        std::vector<int> expected_value = {1, 1, 0, 1, 0};
+        auto returned_vector = buildVertexVector(subset, indices[0]);
+        REQUIRE(returned_vector == expected_value);
+    }
+
+}
 
 TEST_CASE("Base functionality tests")
 {

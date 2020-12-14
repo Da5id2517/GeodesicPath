@@ -107,3 +107,31 @@ bool simplexChecker(std::vector<std::vector<int>> &simplices, int k)
 
     return true;
 }
+
+std::vector<int> buildVertexVector(std::vector<int> &simplices, std::vector<int> &indices)
+{
+    if(simplices.size() > indices.size())
+    {
+        throw std::invalid_argument("Too many vertices in simplices.");
+    }
+
+    // both collection must be sorted for this to work
+    // indices is generated sorted, simplices however, have to be manually sorted.
+    // this covers cases with edges and faces since they are integers for now.
+    std::sort(simplices.begin(), simplices.end());
+
+    if(!std::includes(indices.begin(), indices.end(), simplices.begin(), simplices.end()))
+    {
+        throw std::invalid_argument("Simplices isnt a subset of indices.");
+    }
+
+    std::vector<int> column_vector(indices.size());
+
+    for(auto &vertex: simplices)
+    {
+        column_vector[vertex] = 1;
+    }
+
+    return column_vector;
+}
+
