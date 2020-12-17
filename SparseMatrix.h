@@ -6,6 +6,7 @@
 class SparseMatrix
 {
 public:
+    SparseMatrix();
     SparseMatrix(DenseMatrix matrix);
     std::vector<std::tuple<int, int, int>> getData();
 

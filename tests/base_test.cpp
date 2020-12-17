@@ -1,8 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 #include "../mesh.h"
-#include "../utils.h"
-#include "../Face.h"
+#include "../Complex.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
@@ -11,19 +10,79 @@
 
 TEST_CASE("Face class tests")
 {
-    SECTION("Edge constructor")
-    {
-        auto test_vertex1 = Vertex();
-        auto test_vertex2 = Vertex(1.0, 1.0, 1);
-        auto test_vertex3 = Vertex(1.0, 0.0, 2);
-        auto test_edge1 = Edge(test_vertex1, test_vertex2, 0);
-        auto test_edge2 = Edge(test_vertex2, test_vertex3, 1);
-        auto test_edge3 = Edge(test_vertex3, test_vertex1, 2);
-        std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
-        auto test_face = Face(edges, 0);
+    auto test_vertex1 = Vertex();
+    auto test_vertex2 = Vertex(1.0, 1.0, 1);
+    auto test_vertex3 = Vertex(1.0, 0.0, 2);
+    auto test_vertex4 = Vertex(5.0, 5.0, 3);
+    auto test_edge1 = Edge(test_vertex1, test_vertex2, 0);
+    auto test_edge2 = Edge(test_vertex2, test_vertex3, 1);
+    auto test_edge3 = Edge(test_vertex3, test_vertex1, 2);
+    auto test_edge4 = Edge(test_vertex3, test_vertex4, 3);
 
+    std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
+    auto test_face = Face(edges, 0);
+
+    SECTION("Edge represented as a tuple of ints")
+    {
+        auto test_edge1_as_tuple = std::make_tuple<int, int>(0,1);
+        auto test_edge2_as_tuple = std::make_tuple<int, int>(1,2);
+        REQUIRE(test_edge1.edge_as_index_pair() == test_edge1_as_tuple);
+        REQUIRE(test_edge2.edge_as_index_pair() == test_edge2_as_tuple);
+    }
+
+    SECTION("Face must contain more than two edges")
+    {
+        std::vector<Edge> faulty_edges = {test_edge2, test_edge1};
+        REQUIRE_THROWS_AS(Face(faulty_edges, 0), std::invalid_argument);
+    }
+
+    SECTION("Edges that make a face must form a cycle")
+    {
+        std::vector<Edge> faulty_edges = {test_edge1, test_edge2, test_edge4};
+        REQUIRE_THROWS_AS(Face(faulty_edges, 0), std::invalid_argument);
+    }
+
+    SECTION("Face constructor works and sets proper dimension")
+    {
         REQUIRE(test_face.dimension() == 2);
     }
+
+    SECTION("Face as index k tuple test")
+    {
+        std::vector<int> expected_vector = {0, 1, 2};
+        REQUIRE(test_face.face_as_index_k_tuple() == expected_vector);
+    }
+
+    SECTION("Complex construction")
+    {
+        std::vector<Vertex> vertices = {test_vertex1, test_vertex2, test_vertex3};
+        std::vector<Face> faces = {test_face};
+        auto indices = assignElementIndices(3,3,1);
+        Complex complex(vertices, edges, faces);
+        auto returnedEdgeVertexMatrix = complex.getEdgeVertexAdjacencyMatrix();
+        auto returnedFaceEdgeMatrix = complex.getFaceEdgeAdjacencyMatrix();
+        std::vector<std::tuple<int, int, int>> expectedEdgeVertexMatrix = {
+                {0,0,1}, {0,1,1},
+                {1,1,1}, {1,2,1},
+                {2,0,1}, {2,2,1}
+        };
+
+        std::vector<std::tuple<int, int, int>> expectedFaceEdgeMatrix = {{0,0,1}, {0,1,1}, {0,2,1}};
+        REQUIRE(returnedEdgeVertexMatrix.getData() == expectedEdgeVertexMatrix);
+        REQUIRE(returnedFaceEdgeMatrix.getData() == expectedFaceEdgeMatrix);
+    }
+
+    SECTION("Index setter test")
+    {
+        test_vertex4.setIndex(4);
+        test_edge2.setIndex(5);
+        test_face.setIndex(15);
+        REQUIRE(test_vertex4.getIndex() == 4);
+        REQUIRE(test_edge2.getIndex() == 5);
+        REQUIRE(test_face.getIndex() == 15);
+    }
+
+
 }
 
 TEST_CASE("simplexChecker tests")
@@ -116,8 +175,8 @@ TEST_CASE("A0 and A1 tests")
     auto test_triangle_indices = assignElementIndices(3,3,1);
     auto test_square_indices = assignElementIndices(4,4,1);
 
-    std::vector<std::vector<int>> test_triangle_simplicies = {{0,1},{1,2},{2,0}};
-    std::vector<std::vector<int>> test_square_simplices = {{0,1},{1,2},{2,3},{3,0}};
+    std::vector<std::tuple<int, int>> test_triangle_simplicies = {{0,1},{1,2},{2,0}};
+    std::vector<std::tuple<int, int>> test_square_simplices = {{0,1},{1,2},{2,3},{3,0}};
 
     std::vector<std::vector<int>> test_triangle_face_simplices = {{0,1,2}};
     std::vector<std::vector<int>> test_square_face_simplices = {{0,1,2,3}};
@@ -212,8 +271,9 @@ TEST_CASE("Base functionality tests")
 
     std::ofstream output("test.obj");
 
-    int rows = rand() % 10 + 2;
-    int columns = rand() % 10 + 2;
+    //TODO: some sketchy shit going on with rand()
+    int rows = 10;
+    int columns = 10;
 
     std::unique_ptr<geometrycentral::surface::SurfaceMesh> mesh;
     std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> geometry;

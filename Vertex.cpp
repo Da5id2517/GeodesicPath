@@ -26,3 +26,13 @@ int Vertex::dimension()
 {
     return 0;
 }
+
+void Vertex::setIndex(int new_index)
+{
+    this->index = new_index;
+}
+
+bool Vertex::operator==(const Vertex &other) const
+{
+    return this->index == other.index && this->x == other.x && this->y == other.y;
+}

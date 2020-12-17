@@ -52,3 +52,10 @@ int SparseMatrix::operator()(int i, int j)
     return 0;
 }
 
+//TODO: remove later
+SparseMatrix::SparseMatrix()
+{
+    this->rows = 0;
+    this->columns = 0;
+    this->data = {};
+}

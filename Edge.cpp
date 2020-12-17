@@ -17,6 +17,22 @@ Vertex& Edge::getStart()
     return start_vertex;
 }
 
+int Edge::getIndex() const
+{
+    return this->index;
+}
+
+void Edge::setIndex(int new_index)
+{
+    this->index = new_index;
+}
+
+std::tuple<int, int> Edge::edge_as_index_pair()
+{
+    auto return_tuple = std::make_tuple<int, int>(this->getStart().getIndex(), this->getEnd().getIndex());
+    return return_tuple;
+}
+
 int Edge::dimension()
 {
     return 1;

@@ -14,7 +14,7 @@ std::vector<std::vector<int>> assignElementIndices(int number_of_vertices, int n
 bool simplexChecker(std::vector<std::vector<int>> &simplex, int k = 0);
 
 SparseMatrix buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>> &indices,
-                                            std::vector<std::vector<int>> &twoSimplices);
+                                            std::vector<std::tuple<int, int>> &twoSimplices);
 
 SparseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices,
                                           std::vector<std::vector<int>> &kSimplices);

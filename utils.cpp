@@ -43,18 +43,17 @@ std::vector<std::vector<int>> assignElementIndices(
 
 SparseMatrix buildVertexEdgeAdjacencyMatrix(
         std::vector<std::vector<int>> &indices,
-        std::vector<std::vector<int>> &twoSimplices)
+        std::vector<std::tuple<int, int>> &twoSimplices)
 {
-    //TODO:this check doesnt guarantee that simplex wont have exactly two vertices
-    simplexChecker(twoSimplices, 2);
+
     auto [rows, columns] = std::make_tuple(indices[1].size(), indices[0].size());
     auto edge_indices_it = indices[1].begin();
     DenseMatrix denseMatrix(rows, columns);
 
     for(auto simplex : twoSimplices)
     {
-        denseMatrix(*edge_indices_it, simplex[0]) = 1;
-        denseMatrix(*edge_indices_it, simplex[1]) = 1;
+        denseMatrix(*edge_indices_it, std::get<0>(simplex)) = 1;  //change to -1
+        denseMatrix(*edge_indices_it, std::get<1>(simplex)) = 1;
         edge_indices_it++;
     }
 
