@@ -66,7 +66,6 @@ void triangle::write_vertices(std::ofstream &out)
     {
         for(int x=0; x<columns; x++)
         {
-            //TODO: add lambdas that transform these expressions.
             px = 0.5f*y + x;
             py = y * sqrtf(3.0f)/2.0f;
             out << "v " << px << " " << py << " 0.0" << std::endl;
@@ -145,6 +144,3 @@ void hexagon::write_faces(std::ofstream &out)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// TODO: operators
-
-// TODO: semii i=1..8

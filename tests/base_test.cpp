@@ -10,6 +10,7 @@
 
 TEST_CASE("Face class tests")
 {
+    //TODO: split this sausage properly
     auto test_vertex1 = Vertex();
     auto test_vertex2 = Vertex(1.0, 1.0, 1);
     auto test_vertex3 = Vertex(1.0, 0.0, 2);
@@ -21,6 +22,16 @@ TEST_CASE("Face class tests")
 
     std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
     auto test_face = Face(edges, 0);
+
+    std::vector<Vertex> vertices = {test_vertex1, test_vertex2, test_vertex3};
+    std::vector<Face> faces = {test_face};
+    auto indices = assignElementIndices(3, 3, 1);
+    Complex complex(vertices, edges, faces);
+
+    SECTION("Vertex cannot form an edge with itself")
+    {
+        REQUIRE_THROWS_AS(Edge(test_vertex1, test_vertex1), std::invalid_argument);
+    }
 
     SECTION("Edge represented as a tuple of ints")
     {
@@ -49,16 +60,13 @@ TEST_CASE("Face class tests")
 
     SECTION("Face as index k tuple test")
     {
+        //TODO: add more test cases for this
         std::vector<int> expected_vector = {0, 1, 2};
         REQUIRE(test_face.face_as_index_k_tuple() == expected_vector);
     }
 
-    SECTION("Complex construction")
+    SECTION("Complex adjacency matrix construction")
     {
-        std::vector<Vertex> vertices = {test_vertex1, test_vertex2, test_vertex3};
-        std::vector<Face> faces = {test_face};
-        auto indices = assignElementIndices(3,3,1);
-        Complex complex(vertices, edges, faces);
         auto returnedEdgeVertexMatrix = complex.getEdgeVertexAdjacencyMatrix();
         auto returnedFaceEdgeMatrix = complex.getFaceEdgeAdjacencyMatrix();
         std::vector<std::tuple<int, int, int>> expectedEdgeVertexMatrix = {
@@ -70,6 +78,19 @@ TEST_CASE("Face class tests")
         std::vector<std::tuple<int, int, int>> expectedFaceEdgeMatrix = {{0,0,1}, {0,1,1}, {0,2,1}};
         REQUIRE(returnedEdgeVertexMatrix.getData() == expectedEdgeVertexMatrix);
         REQUIRE(returnedFaceEdgeMatrix.getData() == expectedFaceEdgeMatrix);
+    }
+
+    SECTION("buildVertexVector")
+    {
+        std::vector<int> faulty_vertex_indices1 = {1,2,3,4};
+        std::vector<int> faulty_vertex_indices2 = {1,4};
+        REQUIRE_THROWS_AS(complex.buildVertexVector(faulty_vertex_indices1), std::invalid_argument);
+        REQUIRE_THROWS_AS(complex.buildVertexVector(faulty_vertex_indices2), std::invalid_argument);
+
+        std::vector<int> vertex_indices = {0,1};
+        std::vector<int> expected_result = {1,1,0};
+        auto returned_vector = complex.buildVertexVector(vertex_indices);
+        REQUIRE(returned_vector == expected_result);
     }
 
     SECTION("Index setter test")
@@ -240,31 +261,6 @@ TEST_CASE("A0 and A1 tests")
     }
 }
 
-TEST_CASE("buildVertexVector tests")
-{
-    auto indices = assignElementIndices(5,8,4);
-
-    SECTION("Improper subset dimension throws invalid argument.")
-    {
-        std::vector<int> faulty_subset = {0,1,2,3,4,5,6};
-        REQUIRE_THROWS_AS(buildVertexVector(faulty_subset, indices[0]), std::invalid_argument);
-    }
-
-    SECTION("Simplices provided must be a subset of indices.")
-    {
-        std::vector<int> subset_out_of_bounds = {4,-2,1};
-        REQUIRE_THROWS_AS(buildVertexVector(subset_out_of_bounds, indices[0]), std::invalid_argument);
-    }
-
-    SECTION("Base functionality test")
-    {
-        std::vector<int> subset = {3,0,1};
-        std::vector<int> expected_value = {1, 1, 0, 1, 0};
-        auto returned_vector = buildVertexVector(subset, indices[0]);
-        REQUIRE(returned_vector == expected_value);
-    }
-
-}
 
 TEST_CASE("Base functionality tests")
 {

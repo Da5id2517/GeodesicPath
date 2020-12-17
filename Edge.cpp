@@ -2,6 +2,10 @@
 
 Edge::Edge(Vertex &start, Vertex &end, int index)
 {
+    if(start == end)
+    {
+        throw std::invalid_argument("The vertices of a branch must differ.");
+    }
     this->start_vertex = start;
     this->end_vertex = end;
     this->index = index;

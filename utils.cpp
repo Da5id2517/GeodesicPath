@@ -1,9 +1,7 @@
 #include "utils.h"
 
-std::vector<std::vector<int>> assignElementIndices(
-        int number_of_vertices,
-        int number_of_edges,
-        int number_of_faces)
+
+std::vector<std::vector<int>> assignElementIndices(int number_of_vertices, int number_of_edges, int number_of_faces)
 {
     //TODO: right side of the formula should be 2 - 2g
     if(number_of_vertices - number_of_edges + number_of_faces != 1)
@@ -41,11 +39,8 @@ std::vector<std::vector<int>> assignElementIndices(
     return result_collection;
 }
 
-SparseMatrix buildVertexEdgeAdjacencyMatrix(
-        std::vector<std::vector<int>> &indices,
-        std::vector<std::tuple<int, int>> &twoSimplices)
+SparseMatrix buildVertexEdgeAdjacencyMatrix(std::vector<std::vector<int>> &indices, std::vector<std::tuple<int, int>> &twoSimplices)
 {
-
     auto [rows, columns] = std::make_tuple(indices[1].size(), indices[0].size());
     auto edge_indices_it = indices[1].begin();
     DenseMatrix denseMatrix(rows, columns);
@@ -60,11 +55,9 @@ SparseMatrix buildVertexEdgeAdjacencyMatrix(
     return SparseMatrix(denseMatrix);
 }
 
-SparseMatrix buildEdgeFaceAdjacencyMatrix(
-        std::vector<std::vector<int>> &indices,
-        std::vector<std::vector<int>> &kSimplices)
+SparseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices, std::vector<std::vector<int>> &kSimplices)
 {
-    // faces can only be formed by at least 3 edges
+    // TODO: redundant, remove.
     simplexChecker(kSimplices, 3);
 
     auto [rows, columns] = std::make_tuple(indices[2].size(), indices[1].size());
@@ -83,6 +76,7 @@ SparseMatrix buildEdgeFaceAdjacencyMatrix(
     return SparseMatrix(denseMatrix);
 }
 
+//TODO: remove.
 bool simplexChecker(std::vector<std::vector<int>> &simplices, int k)
 {
     if(std::count_if(simplices.begin(), simplices.end(), [k](auto tuple){return tuple.size() < k;}))
@@ -101,36 +95,6 @@ bool simplexChecker(std::vector<std::vector<int>> &simplices, int k)
     {
         throw std::invalid_argument("Tuples cannot contain duplicates.");
     }
-
-    //TODO: simplex cannot contain duplicate tuples.
-
     return true;
-}
-
-std::vector<int> buildVertexVector(std::vector<int> &simplices, std::vector<int> &indices)
-{
-    if(simplices.size() > indices.size())
-    {
-        throw std::invalid_argument("Too many vertices in simplices.");
-    }
-
-    // both collection must be sorted for this to work
-    // indices is generated sorted, simplices however, have to be manually sorted.
-    // this covers cases with edges and faces since they are integers for now.
-    std::sort(simplices.begin(), simplices.end());
-
-    if(!std::includes(indices.begin(), indices.end(), simplices.begin(), simplices.end()))
-    {
-        throw std::invalid_argument("Simplices isnt a subset of indices.");
-    }
-
-    std::vector<int> column_vector(indices.size());
-
-    for(auto &vertex: simplices)
-    {
-        column_vector[vertex] = 1;
-    }
-
-    return column_vector;
 }
 
