@@ -12,6 +12,8 @@ public:
     SparseMatrix getFaceEdgeAdjacencyMatrix();
     std::vector<std::tuple<int, int>> edges_as_index_pairs();
     std::vector<std::vector<int>> faces_as_index_k_tuples();
+    std::vector<Vertex> getVertices();
+    std::vector<Face> getFaces();
 
     std::vector<int> vertexIndices();
     std::vector<int> buildVertexVector(std::vector<int> &vertices);
@@ -27,4 +29,7 @@ private:
     SparseMatrix edgeVertexAdjacencyMatrix;
     SparseMatrix faceEdgeAdjacencyMatrix;
 };
+
+std::ostream &operator << (std::ostream &out, Complex &complex);
+
 #endif //RSPROJECT_COMPLEX_H

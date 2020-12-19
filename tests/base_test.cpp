@@ -28,9 +28,23 @@ TEST_CASE("Face class tests")
     auto indices = assignElementIndices(3, 3, 1);
     Complex complex(vertices, edges, faces);
 
-    SECTION("Vertex cannot form an edge with itself")
+    SECTION("Vertex degree test")
     {
-        REQUIRE_THROWS_AS(Edge(test_vertex1, test_vertex1), std::invalid_argument);
+        REQUIRE(test_vertex2.getDegree() == 2);
+        REQUIRE(test_vertex3.getDegree() == 3);
+        REQUIRE(test_vertex4.getDegree() == 1);
+    }
+
+    SECTION("Edge length test")
+    {
+        REQUIRE(test_edge3.edgeLength() == 1.0);
+        REQUIRE(test_edge1.edgeLength() - sqrt(2) < std::numeric_limits<double>::epsilon());
+    }
+
+    SECTION("Face angle calculation")
+    {
+        auto returned_angles = test_face.getAngles();
+        REQUIRE(std::get<1>(returned_angles) < std::numeric_limits<double>::epsilon());
     }
 
     SECTION("Edge represented as a tuple of ints")
@@ -102,8 +116,6 @@ TEST_CASE("Face class tests")
         REQUIRE(test_edge2.getIndex() == 5);
         REQUIRE(test_face.getIndex() == 15);
     }
-
-
 }
 
 TEST_CASE("simplexChecker tests")
@@ -274,10 +286,42 @@ TEST_CASE("Base functionality tests")
     std::unique_ptr<geometrycentral::surface::SurfaceMesh> mesh;
     std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> geometry;
 
-    SECTION("Generate square of random dimensions, output an appropriate .obj file and visualize it")
+    SECTION("Visualize basic triangle")
     {
         polyscope::init();
 
+        auto vertex0 = Vertex();
+        auto vertex1 = Vertex(0.0, 5.0, 1);
+        auto vertex2 = Vertex(5.0, 0.0, 2);
+        auto vertex3 = Vertex(5.0, 5.0, 3);
+        std::vector<Vertex> vertices = {vertex0, vertex1, vertex2, vertex3};
+        auto edge0 = Edge(vertex0, vertex1, 0);
+        auto edge1 = Edge(vertex1, vertex2, 1);
+        auto edge2 = Edge(vertex2, vertex0, 2);
+        auto edge3 = Edge(vertex2, vertex3, 3);
+        auto edge4 = Edge(vertex3,vertex1, 4);
+        std::vector<Edge> edges0 = {edge0, edge1, edge2};
+        std::vector<Edge> edges1 = {edge3, edge4, edge1};
+        std::vector<Edge> edges = {edge0, edge1, edge2, edge3, edge4};
+        auto face0 = Face(edges0, 0);
+        auto face1 = Face(edges1, 1);
+        std::vector<Face> faces = {face0, face1};
+        auto complex = Complex(vertices, edges, faces);
+
+        output << complex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Basic triangle",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
+    }
+
+    SECTION("Generate square of random dimensions, output an appropriate .obj file and visualize it")
+    {
         square testSquare(rows, columns);
         testSquare.generate_obj(output);
         REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));

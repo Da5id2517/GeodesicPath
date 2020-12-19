@@ -2,13 +2,15 @@
 
 Edge::Edge(Vertex &start, Vertex &end, int index)
 {
-    if(start == end)
-    {
-        throw std::invalid_argument("The vertices of a branch must differ.");
-    }
+    // self edges are allowed and may come as a side effect of the edge flipping algorithm
     this->start_vertex = start;
     this->end_vertex = end;
     this->index = index;
+    start.increase_degree();
+    end.increase_degree();
+    auto xCoord = start.x_coord() - end.x_coord();
+    auto yCoord = start.y_coord() - end.y_coord();
+    this->edge_length = sqrt(xCoord*xCoord + yCoord*yCoord);
 }
 
 Vertex& Edge::getEnd()
@@ -35,6 +37,11 @@ std::tuple<int, int> Edge::edge_as_index_pair()
 {
     auto return_tuple = std::make_tuple<int, int>(this->getStart().getIndex(), this->getEnd().getIndex());
     return return_tuple;
+}
+
+double Edge::edgeLength() const
+{
+    return this->edge_length;
 }
 
 int Edge::dimension()

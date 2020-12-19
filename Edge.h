@@ -15,11 +15,12 @@ public:
 
     int getIndex() const;
     void setIndex(int new_index);
-
+    double edgeLength() const;
     static int dimension();
 
 private:
     int index;
+    double edge_length;
     Vertex start_vertex;
     Vertex end_vertex;
 };

@@ -16,6 +16,16 @@ Complex::Complex(std::vector<Vertex> &vertices, std::vector<Edge> &edges, std::v
 
 }
 
+std::vector<Vertex> Complex::getVertices()
+{
+    return this->vertices;
+}
+
+std::vector<Face> Complex::getFaces()
+{
+    return this->faces;
+}
+
 std::vector<std::tuple<int, int>> Complex::edges_as_index_pairs()
 {
     std::vector<std::tuple<int, int>> edgesAsIndexPairs(this->edges.size());
@@ -83,4 +93,19 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     return column_vector;
 }
 
+std::ostream &operator << (std::ostream &out, Complex &complex)
+{
+    auto vertices = complex.getVertices();
+    auto faces = complex.getFaces();
+    for(auto &vertex : vertices)
+    {
+        out << vertex;
+    }
+
+    for(auto &face : faces)
+    {
+        out << face;
+    }
+    return out;
+}
 

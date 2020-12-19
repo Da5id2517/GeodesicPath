@@ -1,6 +1,14 @@
 #include <unordered_set>
 #include "Face.h"
 
+double SafeAcos (double x)
+{
+    if (x < -1.0) x = -1.0 ;
+    else if (x > 1.0) x = 1.0 ;
+    return acos (x) ;
+}
+//C++ being an actuall fucking pepega.
+
 Face::Face(std::vector<Edge> &edges, int index)
 {
     if(edges.size() <= 2)
@@ -18,13 +26,27 @@ Face::Face(std::vector<Edge> &edges, int index)
         throw std::invalid_argument("A face must contain a cycle.");
     }
 
+    //assumes edges are sorted by index
+    auto a = edges[0].edgeLength();
+    auto b = edges[1].edgeLength();
+    auto c = edges[2].edgeLength();
+    auto alfa = SafeAcos((b*b + c*c - a*a)/2*b*c);
+    auto beta = SafeAcos((a*a + b*b - c*c)/2*a*c);
+    auto gamma = SafeAcos((a*a +b*b - c*c)/2*a*b);
+
+    this->angles = std::make_tuple(alfa, beta, gamma);
     this->edges = edges;
     this->index = index;
 }
 
 std::vector<Edge> Face::getEdges()
 {
-    return edges;
+    return this->edges;
+}
+
+std::tuple<double, double, double> Face::getAngles()
+{
+    return this->angles;
 }
 
 int Face::getIndex() const
@@ -59,4 +81,14 @@ std::vector<int> Face::face_as_index_k_tuple()
     std::sort(result_vector.begin(), result_vector.end());
 
     return result_vector;
+}
+
+std::ostream &operator << (std::ostream &out, Face &face)
+{
+    auto edges = face.getEdges();
+    auto index0_adjusted = edges[0].getStart().getIndex() + 1;
+    auto index1_adjusted = edges[1].getStart().getIndex() + 1;
+    auto index2_adjusted = edges[2].getStart().getIndex() + 1;
+    out << "f " << index0_adjusted << " " << index1_adjusted << " " << index2_adjusted << std::endl;
+    return out;
 }
