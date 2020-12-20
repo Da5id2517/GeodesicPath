@@ -13,6 +13,14 @@ Edge::Edge(Vertex &start, Vertex &end, int index)
     this->edge_length = sqrt(xCoord*xCoord + yCoord*yCoord);
 }
 
+Edge::Edge(const Edge &other)
+{
+    this->start_vertex = other.start_vertex;
+    this->end_vertex = other.end_vertex;
+    this->index = other.index;
+    this->edge_length = other.edgeLength();
+}
+
 Vertex& Edge::getEnd()
 {
     return end_vertex;

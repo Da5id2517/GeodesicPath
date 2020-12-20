@@ -1,6 +1,6 @@
 #include "Complex.h"
 
-Complex::Complex(std::vector<Vertex> &vertices, std::vector<Edge> &edges, std::vector<Face> &faces)
+Complex::Complex(std::vector<Vertex> &vertices, std::vector<Edge> &edges, std::vector<Triangle> &faces)
 {
     auto complex_indices = assignElementIndices(vertices.size(), edges.size(), faces.size());
     this->indices = complex_indices;
@@ -9,7 +9,7 @@ Complex::Complex(std::vector<Vertex> &vertices, std::vector<Edge> &edges, std::v
     this->faces = faces;
 
     auto edgesAsIndexPairs = this->edges_as_index_pairs();
-    auto facesAsKTuples = this->faces_as_index_k_tuples();
+    auto facesAsKTuples = this->triangles_as_index_triples();
 
     this->edgeVertexAdjacencyMatrix = buildVertexEdgeAdjacencyMatrix(indices, edgesAsIndexPairs);
     this->faceEdgeAdjacencyMatrix = buildEdgeFaceAdjacencyMatrix(indices, facesAsKTuples);
@@ -21,7 +21,7 @@ std::vector<Vertex> Complex::getVertices()
     return this->vertices;
 }
 
-std::vector<Face> Complex::getFaces()
+std::vector<Triangle> Complex::getFaces()
 {
     return this->faces;
 }
@@ -38,16 +38,16 @@ std::vector<std::tuple<int, int>> Complex::edges_as_index_pairs()
     return edgesAsIndexPairs;
 }
 
-std::vector<std::vector<int>> Complex::faces_as_index_k_tuples()
+std::vector<std::vector<int>> Complex::triangles_as_index_triples()
 {
-    std::vector<std::vector<int>> facesAsKTuples(this->faces.size());
+    std::vector<std::vector<int>> trianglesAsTriples(this->faces.size());
     int i = 0;
     for(auto &face: this->faces)
     {
-        facesAsKTuples[i] = face.face_as_index_k_tuple();
+        trianglesAsTriples[i] = face.triangle_as_index_triple();
         i++;
     }
-    return facesAsKTuples;
+    return trianglesAsTriples;
 }
 
 std::vector<int> Complex::vertexIndices()

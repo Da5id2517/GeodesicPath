@@ -7,6 +7,7 @@ class Edge
 {
 public:
     Edge(Vertex &start_vertex,Vertex &end_vertex, int index = 0);
+    Edge(const Edge &other);
 
     Vertex& getStart();
     Vertex& getEnd();

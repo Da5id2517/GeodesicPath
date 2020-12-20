@@ -2,15 +2,49 @@
 #include "catch_amalgamated.hpp"
 #include "../mesh.h"
 #include "../Complex.h"
+#include "../Wedge.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 
 
-TEST_CASE("Face class tests")
+TEST_CASE("Wedge class tests")
 {
-    //TODO: split this sausage properly
+    auto test_vertex0 = Vertex(0.0, 0.0, 0);
+    auto test_vertex1 = Vertex(0.0 , 1.0, 1);
+    auto test_vertex2 = Vertex(1.0, 0.0, 2);
+    auto test_edge0 = Edge(test_vertex0, test_vertex1, 0);
+    auto test_edge1 = Edge(test_vertex1, test_vertex2, 1);
+    auto test_edge_faulty1 = Edge(test_vertex2, test_vertex1);
+    Wedge test_wedge(test_edge0, test_edge1);
+
+    SECTION("Constructor throws invalid argument if joints are not joined.")
+    {
+       REQUIRE_THROWS_AS(Wedge(test_edge0, test_edge_faulty1), std::invalid_argument);
+    }
+
+    SECTION("Joint angle calculation.")
+    {
+        auto angle = test_wedge.wedge_angle();
+        REQUIRE(abs(angle - M_PI/2) <= std::numeric_limits<double>::epsilon());
+    }
+
+}
+
+TEST_CASE("Vertex class tests")
+{
+    SECTION("Operator == tests.")
+    {
+        auto test_vertex0 = Vertex();
+        auto test_vertex1 = Vertex(1.1, 2.0, 1);
+        REQUIRE(!(test_vertex1 == test_vertex0));
+
+    }
+}
+
+TEST_CASE("Complex/Triangle/Edge/Vertex tests")
+{
     auto test_vertex1 = Vertex();
     auto test_vertex2 = Vertex(1.0, 1.0, 1);
     auto test_vertex3 = Vertex(1.0, 0.0, 2);
@@ -21,10 +55,10 @@ TEST_CASE("Face class tests")
     auto test_edge4 = Edge(test_vertex3, test_vertex4, 3);
 
     std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
-    auto test_face = Face(edges, 0);
+    auto test_face = Triangle(test_edge1, test_edge2, test_edge3, 0);
 
     std::vector<Vertex> vertices = {test_vertex1, test_vertex2, test_vertex3};
-    std::vector<Face> faces = {test_face};
+    std::vector<Triangle> faces = {test_face};
     auto indices = assignElementIndices(3, 3, 1);
     Complex complex(vertices, edges, faces);
 
@@ -41,10 +75,10 @@ TEST_CASE("Face class tests")
         REQUIRE(test_edge1.edgeLength() - sqrt(2) < std::numeric_limits<double>::epsilon());
     }
 
-    SECTION("Face angle calculation")
+    SECTION("Triangle angle calculation")
     {
-        auto returned_angles = test_face.getAngles();
-        REQUIRE(std::get<1>(returned_angles) < std::numeric_limits<double>::epsilon());
+        auto returned_angle = test_face.getAngleByVertexIndex(0);
+        REQUIRE(abs(returned_angle - M_PI/2) <= std::numeric_limits<double>::epsilon());
     }
 
     SECTION("Edge represented as a tuple of ints")
@@ -55,28 +89,17 @@ TEST_CASE("Face class tests")
         REQUIRE(test_edge2.edge_as_index_pair() == test_edge2_as_tuple);
     }
 
-    SECTION("Face must contain more than two edges")
-    {
-        std::vector<Edge> faulty_edges = {test_edge2, test_edge1};
-        REQUIRE_THROWS_AS(Face(faulty_edges, 0), std::invalid_argument);
-    }
-
     SECTION("Edges that make a face must form a cycle")
     {
-        std::vector<Edge> faulty_edges = {test_edge1, test_edge2, test_edge4};
-        REQUIRE_THROWS_AS(Face(faulty_edges, 0), std::invalid_argument);
+        REQUIRE_THROWS_AS(Triangle(test_edge1, test_edge2 , test_edge4, 0), std::invalid_argument);
     }
 
-    SECTION("Face constructor works and sets proper dimension")
-    {
-        REQUIRE(test_face.dimension() == 2);
-    }
 
-    SECTION("Face as index k tuple test")
+    SECTION("Triangle as index k tuple test")
     {
         //TODO: add more test cases for this
         std::vector<int> expected_vector = {0, 1, 2};
-        REQUIRE(test_face.face_as_index_k_tuple() == expected_vector);
+        REQUIRE(test_face.triangle_as_index_triple() == expected_vector);
     }
 
     SECTION("Complex adjacency matrix construction")
@@ -118,9 +141,10 @@ TEST_CASE("Face class tests")
     }
 }
 
+//TODO:redundant
 TEST_CASE("simplexChecker tests")
 {
-    SECTION("Faulty simplices throw std::invalid_argument")
+    SECTION("Faulty simplex throw std::invalid_argument")
     {
         std::vector<std::vector<int>> faulty_simplex1 = {{1,2,3}, {1,2,5}, {1,2}};
         std::vector<std::vector<int>> faulty_simplex2 = {{1,2}, {2,3}, {3,0}, {3,3}};
@@ -128,7 +152,7 @@ TEST_CASE("simplexChecker tests")
         REQUIRE_THROWS_AS(simplexChecker(faulty_simplex2, 2), std::invalid_argument);
     }
 
-    SECTION("Good simplices return true")
+    SECTION("Good simplex return true")
     {
         std::vector<std::vector<int>> good_simplex1 = {{1}, {2}, {3}};
         std::vector<std::vector<int>> good_simplex2 = {{1,2,3,4}, {3,2,1,4}, {0,2,1,4}, {0,1,3,4}};
@@ -280,32 +304,36 @@ TEST_CASE("Base functionality tests")
     std::ofstream output("test.obj");
 
     //TODO: some sketchy shit going on with rand()
-    int rows = 10;
-    int columns = 10;
+    int rows = 25;
+    int columns = 50;
 
     std::unique_ptr<geometrycentral::surface::SurfaceMesh> mesh;
     std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> geometry;
 
-    SECTION("Visualize basic triangle")
+    SECTION("Visualize basic triangles")
     {
         polyscope::init();
 
         auto vertex0 = Vertex();
-        auto vertex1 = Vertex(0.0, 5.0, 1);
-        auto vertex2 = Vertex(5.0, 0.0, 2);
-        auto vertex3 = Vertex(5.0, 5.0, 3);
-        std::vector<Vertex> vertices = {vertex0, vertex1, vertex2, vertex3};
+        auto vertex1 = Vertex(5.0, 5.0, 1);
+        auto vertex2 = Vertex(0.0, -12.0, 2);
+        auto vertex3 = Vertex(0.0, -5.0, 3);
+        auto vertex4 = Vertex(-2.0, -1.0, 4);
+        auto vertex5 = Vertex(15.2, 18.7, 5);
+        std::vector<Vertex> vertices = {vertex0, vertex1, vertex2, vertex3, vertex4, vertex5};
         auto edge0 = Edge(vertex0, vertex1, 0);
         auto edge1 = Edge(vertex1, vertex2, 1);
         auto edge2 = Edge(vertex2, vertex0, 2);
         auto edge3 = Edge(vertex2, vertex3, 3);
         auto edge4 = Edge(vertex3,vertex1, 4);
-        std::vector<Edge> edges0 = {edge0, edge1, edge2};
-        std::vector<Edge> edges1 = {edge3, edge4, edge1};
-        std::vector<Edge> edges = {edge0, edge1, edge2, edge3, edge4};
-        auto face0 = Face(edges0, 0);
-        auto face1 = Face(edges1, 1);
-        std::vector<Face> faces = {face0, face1};
+        auto edge5 = Edge(vertex4, vertex5, 5);
+        auto edge6 = Edge(vertex5, vertex0, 6);
+        auto edge7 = Edge(vertex0, vertex4, 7);
+        std::vector<Edge> edges = {edge0, edge1, edge2, edge3, edge4, edge5, edge6, edge7};
+        auto face0 = Triangle(edge0, edge1, edge2, 0);
+        auto face1 = Triangle(edge3, edge4, edge1, 1);
+        auto face2 = Triangle(edge5, edge6, edge7, 2);
+        std::vector<Triangle> faces = {face0, face1, face2};
         auto complex = Complex(vertices, edges, faces);
 
         output << complex;
