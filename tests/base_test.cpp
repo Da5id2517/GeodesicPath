@@ -11,9 +11,9 @@
 
 TEST_CASE("Wedge class tests")
 {
-    auto test_vertex0 = Vertex(0.0, 0.0, 0);
-    auto test_vertex1 = Vertex(0.0 , 1.0, 1);
-    auto test_vertex2 = Vertex(1.0, 0.0, 2);
+    auto test_vertex0 = Vertex(0.0, 0.0, 0.0, 0);
+    auto test_vertex1 = Vertex(0.0 , 1.0, 0.0, 1);
+    auto test_vertex2 = Vertex(1.0, 0.0, 0.0, 2);
     auto test_edge0 = Edge(test_vertex0, test_vertex1, 0);
     auto test_edge1 = Edge(test_vertex1, test_vertex2, 1);
     auto test_edge_faulty1 = Edge(test_vertex2, test_vertex1);
@@ -27,7 +27,7 @@ TEST_CASE("Wedge class tests")
     SECTION("Joint angle calculation.")
     {
         auto angle = test_wedge.wedge_angle();
-        REQUIRE(abs(angle - M_PI/2) <= std::numeric_limits<double>::epsilon());
+        REQUIRE(abs(angle - M_PI/4) <= std::numeric_limits<double>::epsilon());
     }
 
 }
@@ -37,84 +37,195 @@ TEST_CASE("Vertex class tests")
     SECTION("Operator == tests.")
     {
         auto test_vertex0 = Vertex();
-        auto test_vertex1 = Vertex(1.1, 2.0, 1);
-        REQUIRE(!(test_vertex1 == test_vertex0));
+        auto test_vertex1 = Vertex(1.1, 2.0, 5.0, 1);
+        auto index_mismatch = Vertex(1.1, 2.0, 5.0, 2);
+        REQUIRE_FALSE(test_vertex1 == test_vertex0);
+        REQUIRE(test_vertex0 == Vertex());
+        REQUIRE_THROWS_AS(test_vertex1 == index_mismatch, std::invalid_argument);
+    }
 
+    SECTION("Vertex degree tests")
+    {
+        auto vertex0 = Vertex();
+        auto vertex1 = Vertex(1.0, 1.0, 1.0, 1);
+        auto vertex2 = Vertex(2.0, 2.0, 2.0, 2);
+        auto lone_vertex = Vertex(5.0, 5.0, 5.0, 3);
+        vertex0.increase_degree();
+        vertex0.increase_degree();
+        vertex1.increase_degree();
+        vertex2.increase_degree();
+
+        REQUIRE(vertex0.getDegree() == 2);
+        REQUIRE(vertex1.getDegree() == 1);
+        REQUIRE(vertex2.getDegree() == 1);
+        REQUIRE(lone_vertex.getDegree() == 0);
+
+        vertex0.decrease_degree();
+        REQUIRE(vertex0.getDegree() == 1);
+        lone_vertex.decrease_degree();
+        REQUIRE(lone_vertex.getDegree() == -1);
+    }
+
+    SECTION("Vertex index setter tests")
+    {
+        auto vertex = Vertex();
+        REQUIRE(vertex.getIndex() == 0);
+        vertex.setIndex(15);
+        REQUIRE(vertex.getIndex() == 15);
+        vertex.setIndex(2);
+        REQUIRE(vertex.getIndex() == 2);
     }
 }
 
-TEST_CASE("Complex/Triangle/Edge/Vertex tests")
+TEST_CASE("Edge class tests")
+{
+    SECTION("Test edge length")
+    {
+        auto vertex0 = Vertex();
+        auto vertex1 = Vertex(3.0, 4.0, 0.0);
+
+        auto edge0 = Edge(vertex0, vertex1);
+        REQUIRE(abs(edge0.edgeLength() - 5.0) < std::numeric_limits<double>::epsilon());
+
+        auto self_edge = Edge(vertex0, vertex0);
+        REQUIRE(self_edge.edgeLength() < std::numeric_limits<double>::epsilon());
+    }
+
+    SECTION("Edges as index tuples")
+    {
+        auto vertex0 = Vertex();
+        auto vertex1 = Vertex(3.0, 4.0, 5.0, 1);
+        auto vertex2 = Vertex(5.0, 5.0, 5.0, 2);
+        auto edge0 = Edge(vertex0, vertex1);
+        auto edge1 = Edge(vertex0, vertex2);
+        auto self_edge = Edge(vertex0, vertex0);
+        std::vector<indexPair_t> expected_results = {{0,1}, {0,2}, {0,0}};
+
+        REQUIRE(edge0.edge_as_index_pair() == expected_results[0]);
+        REQUIRE(edge1.edge_as_index_pair() == expected_results[1]);
+        REQUIRE(self_edge.edge_as_index_pair() == expected_results[2]);
+    }
+
+    SECTION("Edge == operator")
+    {
+        Vertex vertex0;
+        Vertex vertex1(1.0, 1.0, 0.0, 1);
+        Vertex vertex2(1.2, 1.2, 1.2, 2);
+        Vertex vertex_index_collision(5.0, 5.0, 5.0, 0);
+
+        Edge edge01(vertex0, vertex1), edge10(vertex1, vertex0);
+        Edge edge02(vertex0, vertex2), edge12(vertex1, vertex2);
+
+        REQUIRE(edge01 == edge10);
+        REQUIRE_FALSE(edge02 == edge12);
+
+        edge10.setIndex(15);
+        REQUIRE_THROWS_AS(edge01 == edge10, std::invalid_argument);
+    }
+
+    SECTION("Set edge index tests")
+    {
+        Vertex test_vertex;
+        Edge test_edge(test_vertex, test_vertex);
+        REQUIRE(test_edge.getIndex() == 0);
+        test_edge.setIndex(5);
+        REQUIRE(test_edge.getIndex() == 5);
+    }
+}
+
+TEST_CASE("Triangle class tests")
+{
+    SECTION("Constructor tests")
+    {
+        Vertex vertex0, vertex1(1.0, 0.0, 0.0, 1), vertex2(0.0, 0.0, 1.0, 2);
+        Triangle test_triangle_construction(vertex0, vertex1, vertex2, 0);
+        auto edges = test_triangle_construction.getEdges();
+
+        auto eps = std::numeric_limits<double>::epsilon();
+        REQUIRE(abs(edges[0].edgeLength() - sqrt(2)) <= eps);
+        REQUIRE(abs(edges[1].edgeLength() - 1.0) <= eps);
+        REQUIRE(abs(edges[2].edgeLength() - 1.0) <= eps);
+    }
+
+    SECTION("Triangles as vertex index triples")
+    {
+        //TODO: add index collisions
+        Vertex vertex0(0.0, 0.0, 0.0, 3);
+        Vertex vertex1(0.0, 0.0, 0.0, 7);
+        Vertex vertex2(0.0, 0.0, 0.0, 19);
+        Triangle test_triangle(vertex0, vertex1, vertex2);
+
+        std::vector<int> expected_triple = {3,7,19};
+        auto result_triple = test_triangle.triangle_as_index_triple();
+        REQUIRE(expected_triple == result_triple);
+
+        vertex0.setIndex(1);
+        vertex1.setIndex(2);
+        vertex2.setIndex(3);
+
+        // this fails, not sure if persistance is required.
+        std::vector<int> expected_triple_after_update = {1,2,3};
+        auto result_updated_triple = test_triangle.triangle_as_index_triple();
+        CHECK(expected_triple_after_update == result_updated_triple);
+    }
+
+    SECTION("Angle calculation tests for right triangle.")
+    {
+        Vertex pVert0, pVert1(1.0, 0.0, 0.0, 1), pVert2(0.0, 1.0, 0.0, 2);
+        Triangle test_triangle(pVert0, pVert1, pVert2);
+
+        CHECK(abs(test_triangle.getAngleByVertexIndex(0) - M_PI/2) <= std::numeric_limits<double>::epsilon());
+        CHECK(abs(test_triangle.getAngleByVertexIndex(1) - M_PI/4) <= std::numeric_limits<double>::epsilon());
+        CHECK(abs(test_triangle.getAngleByVertexIndex(2) - M_PI/4) <= std::numeric_limits<double>::epsilon());
+    }
+
+    SECTION("Sum of angles within a triangle should equal pi")
+    {
+        Vertex vertex0(15.2, 17.3, 12.1, 0),
+        vertex1(-24.17, 18.16, -7.56, 1),
+        vertex2(102.15, -103.5, 0.0, 2);
+        Triangle test_triangle(vertex0, vertex1, vertex2);
+        auto angle0 = test_triangle.getAngleByVertexIndex(0);
+        auto angle1 = test_triangle.getAngleByVertexIndex(1);
+        auto angle2 = test_triangle.getAngleByVertexIndex(2);
+        REQUIRE(abs((angle0 + angle1 + angle2) - M_PI) <= std::numeric_limits<double>::epsilon());
+    }
+
+}
+
+TEST_CASE("Complex tests")
 {
     auto test_vertex1 = Vertex();
-    auto test_vertex2 = Vertex(1.0, 1.0, 1);
-    auto test_vertex3 = Vertex(1.0, 0.0, 2);
-    auto test_vertex4 = Vertex(5.0, 5.0, 3);
-    auto test_edge1 = Edge(test_vertex1, test_vertex2, 0);
-    auto test_edge2 = Edge(test_vertex2, test_vertex3, 1);
-    auto test_edge3 = Edge(test_vertex3, test_vertex1, 2);
-    auto test_edge4 = Edge(test_vertex3, test_vertex4, 3);
-
-    std::vector<Edge> edges = {test_edge1, test_edge2, test_edge3};
-    auto test_face = Triangle(test_edge1, test_edge2, test_edge3, 0);
+    auto test_vertex2 = Vertex(1.0, 1.0, 0.0, 1);
+    auto test_vertex3 = Vertex(1.0, 0.0, 0.0, 2);
 
     std::vector<Vertex> vertices = {test_vertex1, test_vertex2, test_vertex3};
-    std::vector<Triangle> faces = {test_face};
-    auto indices = assignElementIndices(3, 3, 1);
-    Complex complex(vertices, edges, faces);
-
-    SECTION("Vertex degree test")
-    {
-        REQUIRE(test_vertex2.getDegree() == 2);
-        REQUIRE(test_vertex3.getDegree() == 3);
-        REQUIRE(test_vertex4.getDegree() == 1);
-    }
-
-    SECTION("Edge length test")
-    {
-        REQUIRE(test_edge3.edgeLength() == 1.0);
-        REQUIRE(test_edge1.edgeLength() - sqrt(2) < std::numeric_limits<double>::epsilon());
-    }
-
-    SECTION("Triangle angle calculation")
-    {
-        auto returned_angle = test_face.getAngleByVertexIndex(0);
-        REQUIRE(abs(returned_angle - M_PI/2) <= std::numeric_limits<double>::epsilon());
-    }
-
-    SECTION("Edge represented as a tuple of ints")
-    {
-        auto test_edge1_as_tuple = std::make_tuple<int, int>(0,1);
-        auto test_edge2_as_tuple = std::make_tuple<int, int>(1,2);
-        REQUIRE(test_edge1.edge_as_index_pair() == test_edge1_as_tuple);
-        REQUIRE(test_edge2.edge_as_index_pair() == test_edge2_as_tuple);
-    }
-
-    SECTION("Edges that make a face must form a cycle")
-    {
-        REQUIRE_THROWS_AS(Triangle(test_edge1, test_edge2 , test_edge4, 0), std::invalid_argument);
-    }
-
-
-    SECTION("Triangle as index k tuple test")
-    {
-        //TODO: add more test cases for this
-        std::vector<int> expected_vector = {0, 1, 2};
-        REQUIRE(test_face.triangle_as_index_triple() == expected_vector);
-    }
+    std::vector<std::vector<int>> faces = {{0,1,2}};
+    Complex complex(vertices, faces);
 
     SECTION("Complex adjacency matrix construction")
     {
-        auto returnedEdgeVertexMatrix = complex.getEdgeVertexAdjacencyMatrix();
-        auto returnedFaceEdgeMatrix = complex.getFaceEdgeAdjacencyMatrix();
-        std::vector<std::tuple<int, int, int>> expectedEdgeVertexMatrix = {
-                {0,0,1}, {0,1,1},
-                {1,1,1}, {1,2,1},
-                {2,0,1}, {2,2,1}
+        std::vector<rowColumnValue_t> expectedEdgeVertexMatrix = {
+                {0,1,1}, {0,2,1},
+                {1,0,1}, {1,2,1},
+                {2,0,1}, {2,1,1}
+        };
+        std::vector<rowColumnValue_t> expectedFaceEdgeMatrix = {
+                {0,0,1}, {0,1,1}, {0,2,1}
         };
 
-        std::vector<std::tuple<int, int, int>> expectedFaceEdgeMatrix = {{0,0,1}, {0,1,1}, {0,2,1}};
+        auto returnedEdgeVertexMatrix = complex.getEdgeVertexAdjacencyMatrix();
+        auto returnedFaceEdgeMatrix = complex.getFaceEdgeAdjacencyMatrix();
+
+
         REQUIRE(returnedEdgeVertexMatrix.getData() == expectedEdgeVertexMatrix);
         REQUIRE(returnedFaceEdgeMatrix.getData() == expectedFaceEdgeMatrix);
+    }
+
+    SECTION("branchThatContains tests")
+    {
+        REQUIRE(complex.branchThatContains(0, 1) == 2);
+        REQUIRE(complex.branchThatContains(0, 3) == -1);
     }
 
     SECTION("buildVertexVector")
@@ -130,15 +241,6 @@ TEST_CASE("Complex/Triangle/Edge/Vertex tests")
         REQUIRE(returned_vector == expected_result);
     }
 
-    SECTION("Index setter test")
-    {
-        test_vertex4.setIndex(4);
-        test_edge2.setIndex(5);
-        test_face.setIndex(15);
-        REQUIRE(test_vertex4.getIndex() == 4);
-        REQUIRE(test_edge2.getIndex() == 5);
-        REQUIRE(test_face.getIndex() == 15);
-    }
 }
 
 //TODO:redundant
@@ -184,20 +286,47 @@ TEST_CASE("DenseMatrix class tests")
 
 TEST_CASE("SparseMatrix class tests")
 {
-    DenseMatrix testDenseMatrix({{1,0,0}, {0,1,0}, {0,0,1}});
-    auto returned_matrix = SparseMatrix(testDenseMatrix);
-
     SECTION("Dense to sparse conversion.")
     {
-        std::vector<std::tuple<int, int, int>> expected_matrix = {{0,0,1},{1,1,1},{2,2,1}};
+        DenseMatrix testDenseMatrix({{1,0,0}, {0,1,0}, {0,0,1}});
+        auto returned_matrix = SparseMatrix(testDenseMatrix);
+        std::vector<rowColumnValue_t> expected_matrix = {
+                {0,0,1},{1,1,1},{2,2,1}
+        };
+
         REQUIRE(returned_matrix.getData() == expected_matrix);
     }
 
     SECTION("Accessing elements throws invalid argument if index out of bounds returns element otherwise.")
     {
-        REQUIRE(returned_matrix(2,2) == 1);
-        REQUIRE(returned_matrix(1,0) == 0);
-        REQUIRE_THROWS_AS(returned_matrix(3,1), std::invalid_argument);
+        DenseMatrix testMatrix({{1,2,3,4}, {0,5,6,7}, {0,0,0,0}});
+        SparseMatrix sparseTestMatrix(testMatrix);
+
+        REQUIRE(sparseTestMatrix(1,3) == 7);
+        REQUIRE(sparseTestMatrix(1,0) == 0);
+        REQUIRE(sparseTestMatrix(2,2) == 0);
+        REQUIRE(sparseTestMatrix(0,2) == 3);
+
+        REQUIRE_THROWS_AS(sparseTestMatrix(3,1), std::invalid_argument);
+        REQUIRE_THROWS_AS(sparseTestMatrix(5,-2), std::invalid_argument);
+    }
+
+    SECTION("getColumnWithinRow and getRowWithinColumn tests")
+    {
+        DenseMatrix testMatrix({{1,2,3,4}, {0,5,6,7}, {0,0,0,0}, {2,2,5,0}, {1,0,1,1}});
+        SparseMatrix sparseTestMatrix(testMatrix);
+
+        std::vector<int> expected_first_row = {0, 1, 2, 3};
+        std::vector<int> expected_second_column = {0, 1, 3};
+        std::vector<int> expected_third_column = {0, 1, 3, 4};
+
+        auto result_first_row = sparseTestMatrix.getColumnIndicesWithinRow(0);
+        auto result_second_column = sparseTestMatrix.getRowIndicesWithinColumn(1);
+        auto result_third_column = sparseTestMatrix.getRowIndicesWithinColumn(2);
+
+        REQUIRE(expected_first_row == result_first_row);
+        REQUIRE(expected_second_column == result_second_column);
+        REQUIRE(expected_third_column == result_third_column);
     }
 }
 
@@ -232,15 +361,17 @@ TEST_CASE("A0 and A1 tests")
     auto test_triangle_indices = assignElementIndices(3,3,1);
     auto test_square_indices = assignElementIndices(4,4,1);
 
-    std::vector<std::tuple<int, int>> test_triangle_simplicies = {{0,1},{1,2},{2,0}};
-    std::vector<std::tuple<int, int>> test_square_simplices = {{0,1},{1,2},{2,3},{3,0}};
+    std::vector<indexPair_t> test_triangle_simplicies = {{0,1},{1,2},{2,0}};
+    std::vector<indexPair_t> test_square_simplices = {
+            {0,1},{1,2},{2,3},{3,0}
+    };
 
     std::vector<std::vector<int>> test_triangle_face_simplices = {{0,1,2}};
     std::vector<std::vector<int>> test_square_face_simplices = {{0,1,2,3}};
 
     SECTION("A0 for test_triangle")
     {
-        std::vector<std::tuple<int, int, int>> expected_matrix = {
+        std::vector<rowColumnValue_t> expected_matrix = {
                 {0,0,1}, {0,1,1},
                 {1,1,1}, {1,2,1},
                 {2,0,1}, {2,2,1}
@@ -253,7 +384,7 @@ TEST_CASE("A0 and A1 tests")
 
     SECTION("A0 for test_square")
     {
-        std::vector<std::tuple<int, int, int>> expected_matrix = {
+        std::vector<rowColumnValue_t> expected_matrix = {
                 {0,0,1}, {0,1,1},
                 {1,1,1}, {1,2,1},
                 {2,2,1}, {2,3,1},
@@ -266,7 +397,9 @@ TEST_CASE("A0 and A1 tests")
 
     SECTION("A1 for test_triangle")
     {
-        std::vector<std::tuple<int, int, int>> expected_matrix = {{0,0,1},{0,1,1}, {0,2,1}};
+        std::vector<rowColumnValue_t> expected_matrix = {
+                {0,0,1},{0,1,1}, {0,2,1}
+        };
         auto returned_matrix = buildEdgeFaceAdjacencyMatrix(test_triangle_indices,test_triangle_face_simplices);
 
         REQUIRE(returned_matrix.getData() == expected_matrix);
@@ -274,7 +407,9 @@ TEST_CASE("A0 and A1 tests")
 
     SECTION("A1 for test_square")
     {
-        std::vector<std::tuple<int, int, int>> expected_matrix = {{0,0,1}, {0,1,1}, {0,2,1}, {0,3,1}};
+        std::vector<rowColumnValue_t> expected_matrix = {
+                {0,0,1}, {0,1,1}, {0,2,1}, {0,3,1}
+        };
         auto returned_matrix = buildEdgeFaceAdjacencyMatrix(test_square_indices, test_square_face_simplices);
 
         REQUIRE(returned_matrix.getData() == expected_matrix);
@@ -286,7 +421,7 @@ TEST_CASE("A0 and A1 tests")
         std::vector<std::vector<int>> simplices = {{4,5,0}, {5,6,1}, {6,7,2}, {7,4,3}};
 
         auto returned_matrix = buildEdgeFaceAdjacencyMatrix(indices, simplices);
-        std::vector<std::tuple<int, int, int>> expected_matrix = {
+        std::vector<rowColumnValue_t> expected_matrix = {
                 {0,0,1}, {0,4,1}, {0,5,1},
                 {1,1,1}, {1,5,1}, {1,6,1},
                 {2,2,1}, {2,6,1}, {2,7,1},
@@ -300,10 +435,8 @@ TEST_CASE("A0 and A1 tests")
 
 TEST_CASE("Base functionality tests")
 {
-
     std::ofstream output("test.obj");
 
-    //TODO: some sketchy shit going on with rand()
     int rows = 25;
     int columns = 50;
 
@@ -314,27 +447,11 @@ TEST_CASE("Base functionality tests")
     {
         polyscope::init();
 
-        auto vertex0 = Vertex();
-        auto vertex1 = Vertex(5.0, 5.0, 1);
-        auto vertex2 = Vertex(0.0, -12.0, 2);
-        auto vertex3 = Vertex(0.0, -5.0, 3);
-        auto vertex4 = Vertex(-2.0, -1.0, 4);
-        auto vertex5 = Vertex(15.2, 18.7, 5);
-        std::vector<Vertex> vertices = {vertex0, vertex1, vertex2, vertex3, vertex4, vertex5};
-        auto edge0 = Edge(vertex0, vertex1, 0);
-        auto edge1 = Edge(vertex1, vertex2, 1);
-        auto edge2 = Edge(vertex2, vertex0, 2);
-        auto edge3 = Edge(vertex2, vertex3, 3);
-        auto edge4 = Edge(vertex3,vertex1, 4);
-        auto edge5 = Edge(vertex4, vertex5, 5);
-        auto edge6 = Edge(vertex5, vertex0, 6);
-        auto edge7 = Edge(vertex0, vertex4, 7);
-        std::vector<Edge> edges = {edge0, edge1, edge2, edge3, edge4, edge5, edge6, edge7};
-        auto face0 = Triangle(edge0, edge1, edge2, 0);
-        auto face1 = Triangle(edge3, edge4, edge1, 1);
-        auto face2 = Triangle(edge5, edge6, edge7, 2);
-        std::vector<Triangle> faces = {face0, face1, face2};
-        auto complex = Complex(vertices, edges, faces);
+        Vertex vertex0, vertex1(50.0, 0.0, 0.0, 1), vertex2(0.0, 0.0, 50.0, 2);
+        Vertex vertex3(0.0, 50.0, 0.0, 3);
+        std::vector<Vertex> vertices = {vertex0, vertex1, vertex2, vertex3};
+        std::vector<std::vector<int>> indices = {{0,1,2}, {0,1,3}, {0,2,3}, {1,2,3}};
+        Complex complex(vertices, indices);
 
         output << complex;
 

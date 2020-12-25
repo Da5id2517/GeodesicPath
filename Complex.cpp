@@ -1,19 +1,36 @@
 #include "Complex.h"
 
-Complex::Complex(std::vector<Vertex> &vertices, std::vector<Edge> &edges, std::vector<Triangle> &faces)
+Complex::Complex(std::vector<Vertex> &vertices, std::vector<std::vector<int>> &face_indices)
 {
-    auto complex_indices = assignElementIndices(vertices.size(), edges.size(), faces.size());
-    this->indices = complex_indices;
     this->vertices = vertices;
-    this->edges = edges;
-    this->faces = faces;
 
+    //Assume that vertex indices are sorted
+    int i = 0, j = 0;
+    for(auto &face : face_indices)
+    {
+        Triangle triangle(vertices[face[0]], vertices[face[1]], vertices[face[2]], i);
+
+        auto triangle_edges = triangle.getEdges();
+        for(auto &edge: triangle_edges)
+        {
+            // if edge is already in edges do not add it.
+            if(!std::count(this->edges.begin(), this->edges.end(), edge))
+            {
+                // if not adjust index and add it.
+                triangle.setEdgeIndex(j, edge);
+                this->edges.push_back(edge);
+                j++;
+            }
+        }
+        this->faces.push_back(triangle);
+        i++;
+    }
+
+    this->indices = assignElementIndices(this->vertices.size(), j, i);
     auto edgesAsIndexPairs = this->edges_as_index_pairs();
-    auto facesAsKTuples = this->triangles_as_index_triples();
-
+    auto trianglesAsIndexTriples = this->triangles_as_index_triples();
     this->edgeVertexAdjacencyMatrix = buildVertexEdgeAdjacencyMatrix(indices, edgesAsIndexPairs);
-    this->faceEdgeAdjacencyMatrix = buildEdgeFaceAdjacencyMatrix(indices, facesAsKTuples);
-
+    this->faceEdgeAdjacencyMatrix = buildEdgeFaceAdjacencyMatrix(indices, trianglesAsIndexTriples);
 }
 
 std::vector<Vertex> Complex::getVertices()
@@ -26,15 +43,17 @@ std::vector<Triangle> Complex::getFaces()
     return this->faces;
 }
 
-std::vector<std::tuple<int, int>> Complex::edges_as_index_pairs()
+std::vector<indexPair_t> Complex::edges_as_index_pairs()
 {
-    std::vector<std::tuple<int, int>> edgesAsIndexPairs(this->edges.size());
-    int i = 0;
+    std::vector<indexPair_t> edgesAsIndexPairs;
     for(auto &edge : this->edges)
     {
-        edgesAsIndexPairs[i] =  edge.edge_as_index_pair();
-        i++;
+        edgesAsIndexPairs.push_back(edge.edge_as_index_pair());
     }
+
+    //TODO: try it with transform later
+//    std::transform(this->edges.begin(), this->edges.end(), edgesAsIndexPairs.begin(),
+//                   [](auto e){return e.edge_as_index_pair();});
     return edgesAsIndexPairs;
 }
 
@@ -91,6 +110,26 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     }
 
     return column_vector;
+}
+
+
+int Complex::branchThatContains(int start_index, int end_index)
+{
+    std::vector<int> index_vector = {start_index, end_index};
+    std::sort(index_vector.begin(), index_vector.end());
+    auto matrix = this->getEdgeVertexAdjacencyMatrix();
+
+    for(int i = 0; i < matrix.getRows(); i++)
+    {
+        auto matrix_row = matrix.getColumnIndicesWithinRow(i);
+        if(std::includes(matrix_row.begin(), matrix_row.end(), index_vector.begin(), index_vector.end()))
+        {
+            return i;
+        }
+    }
+
+    //if branch doesn't exists return -1
+    return -1;
 }
 
 std::ostream &operator << (std::ostream &out, Complex &complex)

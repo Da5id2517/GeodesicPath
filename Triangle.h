@@ -8,18 +8,20 @@
 class Triangle
 {
 public:
-    Triangle(Edge &aEdge, Edge &bEdge, Edge &cEdge, int index = 0);
+    Triangle(Vertex &pointA, Vertex &pointB, Vertex &pointC, int index = 0);
 
-    std::vector<Edge> getEdges();
-
+    void setEdgeIndex(int new_index, Edge &edge);
     void setIndex(int new_index);
     int getIndex() const;
+    std::vector<Vertex> getVertices();
+    std::vector<Edge> getEdges();
 
     double getAngleByVertexIndex(int id);
     std::vector<int> triangle_as_index_triple();
 
 
 private:
+    std::vector<Vertex> vertices;
     std::vector<Edge> edges;
     std::map<int, double> vertex_index_angle_map;
     int index;

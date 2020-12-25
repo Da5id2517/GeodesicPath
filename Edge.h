@@ -3,6 +3,7 @@
 #include <vector>
 #include "Vertex.h"
 
+
 class Edge
 {
 public:
@@ -11,13 +12,16 @@ public:
 
     Vertex& getStart();
     Vertex& getEnd();
+    int getStartIndex() const;
+    int getEndIndex() const;
 
-    std::tuple<int, int> edge_as_index_pair();
+    indexPair_t edge_as_index_pair() const;
 
     int getIndex() const;
     void setIndex(int new_index);
     double edgeLength() const;
-    static int dimension();
+
+    bool operator == (const Edge &other) const;
 
 private:
     int index;
@@ -25,5 +29,6 @@ private:
     Vertex start_vertex;
     Vertex end_vertex;
 };
+
 
 #endif //RSPROJECT_EDGE_H

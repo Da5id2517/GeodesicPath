@@ -8,9 +8,13 @@ Edge::Edge(Vertex &start, Vertex &end, int index)
     this->index = index;
     start.increase_degree();
     end.increase_degree();
-    auto xCoord = start.x_coord() - end.x_coord();
-    auto yCoord = start.y_coord() - end.y_coord();
-    this->edge_length = sqrt(xCoord*xCoord + yCoord*yCoord);
+    auto startPoint = start.getPoint();
+    auto endPoint = end.getPoint();
+
+    auto xCoord = startPoint.x - endPoint.x;
+    auto yCoord = startPoint.y - endPoint.y;
+    auto zCoord = startPoint.z - endPoint.z;
+    this->edge_length = sqrt(xCoord*xCoord + yCoord*yCoord + zCoord*zCoord);
 }
 
 Edge::Edge(const Edge &other)
@@ -31,6 +35,16 @@ Vertex& Edge::getStart()
     return start_vertex;
 }
 
+int Edge::getStartIndex() const
+{
+    return start_vertex.getIndex();
+}
+
+int Edge::getEndIndex() const
+{
+    return end_vertex.getIndex();
+}
+
 int Edge::getIndex() const
 {
     return this->index;
@@ -41,10 +55,10 @@ void Edge::setIndex(int new_index)
     this->index = new_index;
 }
 
-std::tuple<int, int> Edge::edge_as_index_pair()
+indexPair_t Edge::edge_as_index_pair() const
 {
-    auto return_tuple = std::make_tuple<int, int>(this->getStart().getIndex(), this->getEnd().getIndex());
-    return return_tuple;
+    indexPair_t tuple = {this->getStartIndex(), this->getEndIndex()};
+    return tuple;
 }
 
 double Edge::edgeLength() const
@@ -52,7 +66,17 @@ double Edge::edgeLength() const
     return this->edge_length;
 }
 
-int Edge::dimension()
+bool Edge::operator == (const Edge &other) const
 {
-    return 1;
+    auto equal_index_pairs = this->edge_as_index_pair() == other.edge_as_index_pair();
+    auto equal_edge_indices = this->getIndex() == other.getIndex();
+    auto equal_edge_lengths = this->edgeLength() == other.edgeLength();
+
+    if(equal_edge_lengths && equal_index_pairs && !equal_edge_indices)
+    {
+        throw std::invalid_argument("Duplicate branch with a different index.");
+    }
+
+    return equal_index_pairs && equal_edge_indices && equal_edge_lengths;
 }
+
