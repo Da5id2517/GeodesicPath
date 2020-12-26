@@ -228,6 +228,31 @@ TEST_CASE("Complex tests")
         REQUIRE(complex.branchThatContains(0, 3) == -1);
     }
 
+
+    SECTION("triangleIndicesThatContain tests")
+    {
+        Vertex v0, v1(1.0, 0.0, 0.0, 1), v2(0.0, 1.0, 0.0, 2), v3(0.0, 0.0, 1.0, 3);
+        std::vector<Vertex> test_vertices = {v0, v1, v2, v3};
+        std::vector<std::vector<int>> test_indices = {{0,1,2}, {0,2,3}, {0,1,3}};
+        Complex test_complex(test_vertices, test_indices);
+        auto resultFor0 = test_complex.triangleIndicesThatContain(0);
+        auto resultFor1 = test_complex.triangleIndicesThatContain(1);
+        auto resultFor2 = test_complex.triangleIndicesThatContain(2);
+        auto resultFor3 = test_complex.triangleIndicesThatContain(3);
+        std::vector<int> expectedFor0 = {0,1,2};
+        std::vector<int> expectedFor1 = {0,2};
+        std::vector<int> expectedFor2 = {0,1};
+        std::vector<int> expectedFor3 = {1,2};
+
+        REQUIRE(resultFor0 == expectedFor0);
+        REQUIRE(resultFor1 == expectedFor1);
+        REQUIRE(resultFor2 == expectedFor2);
+        REQUIRE(resultFor3 == expectedFor3);
+        REQUIRE(test_complex.thirdTriangleVertexIndex(0,1) == 2);
+        REQUIRE(test_complex.thirdTriangleVertexIndex(0,2) == 1);
+        REQUIRE(test_complex.thirdTriangleVertexIndex(3,0) == 2);
+    }
+
     SECTION("buildVertexVector")
     {
         std::vector<int> faulty_vertex_indices1 = {1,2,3,4};
@@ -443,8 +468,10 @@ TEST_CASE("Base functionality tests")
     std::unique_ptr<geometrycentral::surface::SurfaceMesh> mesh;
     std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> geometry;
 
-    SECTION("Visualize basic triangles")
+    SECTION("Complex visualization test")
     {
+        polyscope::options::alwaysRedraw = true;
+
         polyscope::init();
 
         Vertex vertex0, vertex1(50.0, 0.0, 0.0, 1), vertex2(0.0, 0.0, 50.0, 2);
@@ -457,7 +484,7 @@ TEST_CASE("Base functionality tests")
 
         REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
         polyscope::registerSurfaceMesh(
-                "Basic triangle",
+                "Basic Complex visualization test",
                 geometry->inputVertexPositions,
                 mesh->getFaceVertexList());
 
@@ -465,17 +492,37 @@ TEST_CASE("Base functionality tests")
 
     }
 
-    SECTION("Generate square of random dimensions, output an appropriate .obj file and visualize it")
+    SECTION("Algorithm base case test")
     {
-        square testSquare(rows, columns);
-        testSquare.generate_obj(output);
+
+
+
+        Vertex v0, v1(0.0, 50.0, 0.0, 1), v2(0.0, 25.0, -25.0, 2), v3(0.0, 25.0, 25.0, 3);
+        std::vector<Vertex> vertices = {v0, v1, v2, v3};
+        std::vector<std::vector<int>> indices = {{0,1,2}, {0,1,3}};
+        Complex testComplex(vertices, indices);
+        auto flippedComplex = testComplex.findGeodesic(v2, v1, v3);
+        output << testComplex;
+
         REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
         polyscope::registerSurfaceMesh(
-                "Test square surface",
+                "Before Algorithm",
                 geometry->inputVertexPositions,
                 mesh->getFaceVertexList());
 
         polyscope::show();
+
+        output.flush();
+        output << flippedComplex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Before Algorithm",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
     }
 
     SECTION("Generate triangle of random dimensions, output an appropriate .obj file and visualize it")

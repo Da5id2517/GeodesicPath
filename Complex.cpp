@@ -3,7 +3,7 @@
 Complex::Complex(std::vector<Vertex> &vertices, std::vector<std::vector<int>> &face_indices)
 {
     this->vertices = vertices;
-
+    this->faceIndices = face_indices;
     //Assume that vertex indices are sorted
     int i = 0, j = 0;
     for(auto &face : face_indices)
@@ -41,6 +41,11 @@ std::vector<Vertex> Complex::getVertices()
 std::vector<Triangle> Complex::getFaces()
 {
     return this->faces;
+}
+
+std::vector<std::vector<int>> Complex::getFaceIndices()
+{
+    return this->faceIndices;
 }
 
 std::vector<indexPair_t> Complex::edges_as_index_pairs()
@@ -112,6 +117,56 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     return column_vector;
 }
 
+Complex Complex::findGeodesic(Vertex &start, Vertex &joint, Vertex &end)
+{
+    auto segment0Index = branchThatContains(start.getIndex(), joint.getIndex());
+    auto segment1Index = branchThatContains(joint.getIndex(), end.getIndex());
+    if(segment0Index == -1 || segment1Index == -1)
+    {
+        throw std::invalid_argument("No such segments.");
+    }
+
+    auto start_index = thirdTriangleVertexIndex(start.getIndex(), joint.getIndex());
+    auto indicesOfTrianglesThatContainStart = triangleIndicesThatContain(start_index);
+    double angle_sum_of_start = 0.0;
+
+    for(auto index : indicesOfTrianglesThatContainStart)
+    {
+        angle_sum_of_start += faces[index].getAngleByVertexIndex(start_index);
+    }
+
+    if(abs(angle_sum_of_start - M_PI) > std::numeric_limits<double>::epsilon())
+    {
+        auto index_of_edge_to_flip = branchThatContains(start_index, joint.getIndex());
+        auto firstTriangle = faceIndices[indicesOfTrianglesThatContainStart[0]];
+        auto secondTriangle = faceIndices[indicesOfTrianglesThatContainStart[1]];
+        std::vector<std::vector<int>> new_indices = this->getFaceIndices();
+        new_indices[indicesOfTrianglesThatContainStart[0]] = {start.getIndex(), start_index, end.getIndex()};
+        new_indices[indicesOfTrianglesThatContainStart[1]] = {start.getIndex(), joint.getIndex(), end.getIndex()};
+        return Complex(this->vertices, new_indices);
+    }
+}
+
+//assumes this vertex is unique, which it needn't be.
+int Complex::thirdTriangleVertexIndex(int index0, int index1)
+{
+    std::vector<int> index01 = {index0, index1};
+    std::sort(index01.begin(), index01.end());
+    for(auto &indexTriple : this->getFaceIndices())
+    {
+        if(std::includes(indexTriple.begin(), indexTriple.end(), index01.begin(), index01.end()))
+        {
+            for(auto &index : indexTriple)
+            {
+                if(index != index0 && index != index1)
+                {
+                    return index;
+                }
+            }
+        }
+    }
+    // Ew...
+}
 
 int Complex::branchThatContains(int start_index, int end_index)
 {
@@ -127,9 +182,22 @@ int Complex::branchThatContains(int start_index, int end_index)
             return i;
         }
     }
-
     //if branch doesn't exists return -1
     return -1;
+}
+
+std::vector<int> Complex::triangleIndicesThatContain(int vertexId)
+{
+    std::vector<int> result;
+    auto face_indices = this->getFaceIndices();
+    for(int i=0; i < face_indices.size(); i++)
+    {
+        if(std::count(face_indices[i].begin(), face_indices[i].end(), vertexId))
+        {
+            result.push_back(i);
+        }
+    }
+    return result;
 }
 
 std::ostream &operator << (std::ostream &out, Complex &complex)
