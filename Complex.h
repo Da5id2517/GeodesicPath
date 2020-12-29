@@ -20,7 +20,7 @@ public:
     Complex edgeFlip(std::vector<int> &new_indices);
     Complex findGeodesic(Vertex &start, Vertex &joint, Vertex &end);
     int branchThatContains(int start_index, int end_index);
-    int thirdTriangleVertexIndex(int index0, int index1);
+    std::vector<int> thirdTriangleVertexIndex(int index0, int index1);
 
 private:
     std::vector<Vertex> vertices;
