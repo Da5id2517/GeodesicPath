@@ -17,12 +17,14 @@ public:
     std::vector<int> vertexIndices();
     std::vector<int> buildVertexVector(std::vector<int> &vertices);
     std::vector<int> triangleIndicesThatContain(int vertexId);
-    Complex edgeFlip(std::vector<int> &new_indices);
-    Complex findGeodesic(Vertex &start, Vertex &joint, Vertex &end);
+    std::vector<indexPair_t> findGeodesic(std::vector<Vertex> &path);
+    Complex findLocallyGeodesic(std::vector<Vertex> &path, std::vector<indexPair_t> &geodesicPathIndices);
     int branchThatContains(int start_index, int end_index);
     std::vector<int> thirdTriangleVertexIndex(int index0, int index1);
 
 private:
+    indexPair_t connectLast(Vertex &endOfPath, indexPair_t lastEdgeOfPath);
+
     std::vector<Vertex> vertices;
     std::vector<Edge> edges;
     std::vector<Triangle> faces;

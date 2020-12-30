@@ -117,8 +117,12 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     return column_vector;
 }
 
-Complex Complex::findGeodesic(Vertex &start, Vertex &joint, Vertex &end)
+Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, std::vector<indexPair_t> &geodesicPathIndices)
 {
+    auto start = path[0];
+    auto joint = path[1];
+    auto end = path[2];
+
     auto segment0Index = branchThatContains(start.getIndex(), joint.getIndex());
     auto segment1Index = branchThatContains(joint.getIndex(), end.getIndex());
     if(segment0Index == -1 || segment1Index == -1)
@@ -126,26 +130,86 @@ Complex Complex::findGeodesic(Vertex &start, Vertex &joint, Vertex &end)
         throw std::invalid_argument("No such segments.");
     }
 
-    //assumes triangle found is unique, and isn't working properly
-    auto start_index = thirdTriangleVertexIndex(start.getIndex(), joint.getIndex());
-    auto indicesOfTrianglesThatContainStart = triangleIndicesThatContain(start_index[0]);
+    auto current_indices = thirdTriangleVertexIndex(start.getIndex(), joint.getIndex());
+
+    // if start, joint and end form a triangle the wedge has a degree of 1 and the path is the edge formed by start and end.
+    if(current_indices[0] == end.getIndex())
+    {
+        indexPair_t shorterEdge = {start.getIndex(), end.getIndex()};
+        geodesicPathIndices.push_back(shorterEdge);
+        path.erase(++path.begin());                         //remove joint
+        return *this;
+    }
+
+    //TODO: is current joint flexible?
+    auto indicesOfTrianglesThatContainCurrent = triangleIndicesThatContain(current_indices[0]);
     double angle_sum_of_start = 0.0;
 
-    for(auto index : indicesOfTrianglesThatContainStart)
+    for(auto index : indicesOfTrianglesThatContainCurrent)
     {
-        angle_sum_of_start += faces[index].getAngleByVertexIndex(start_index[0]);
+        angle_sum_of_start += faces[index].getAngleByVertexIndex(current_indices[0]);
     }
 
     if(abs(angle_sum_of_start - M_PI) > std::numeric_limits<double>::epsilon())
     {
-        auto index_of_edge_to_flip = branchThatContains(start_index[0], joint.getIndex());
-        auto firstTriangle = faceIndices[indicesOfTrianglesThatContainStart[0]];
-        auto secondTriangle = faceIndices[indicesOfTrianglesThatContainStart[1]];
+        auto firstTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[0]];
+        auto secondTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[1]];
         std::vector<std::vector<int>> new_indices = this->getFaceIndices();
-        new_indices[indicesOfTrianglesThatContainStart[0]] = {start.getIndex(), start_index[0], end.getIndex()};
-        new_indices[indicesOfTrianglesThatContainStart[1]] = {start.getIndex(), joint.getIndex(), end.getIndex()};
+        new_indices[indicesOfTrianglesThatContainCurrent[0]] = {start.getIndex(), current_indices[0], end.getIndex()};
+        new_indices[indicesOfTrianglesThatContainCurrent[1]] = {start.getIndex(), joint.getIndex(), end.getIndex()};
         return Complex(this->vertices, new_indices);
     }
+
+    return *this;
+}
+
+std::vector<indexPair_t> Complex::findGeodesic(std::vector<Vertex> &path)
+{
+    std::vector<indexPair_t> geodesicPathIndices;
+    if(path.size() == 2)
+    {
+        auto pathIndex = branchThatContains(path[0].getIndex(), path[1].getIndex());
+        if(pathIndex == -1)
+        {
+            throw std::invalid_argument("Improper path.");
+        }
+        geodesicPathIndices.push_back(this->edges[pathIndex].edge_as_index_pair());
+        return geodesicPathIndices;
+    }
+
+    Complex newTriangulation = this->findLocallyGeodesic(path, geodesicPathIndices);
+    //calling like this might cause problems consider passing path vector also.
+    path.erase(path.begin());
+
+    //if only 1 vertex is left in path
+    if(path.size() == 1)
+    {
+        //maybe requires the IndexPair_t to be sorted?
+        auto endOfPath = *geodesicPathIndices.end();
+        auto lastEdge = connectLast(path[0], endOfPath);
+
+        if(lastEdge == endOfPath)
+        {
+            return geodesicPathIndices;
+        }
+    }
+    else {
+       auto restOfPath = newTriangulation.findGeodesic(path);
+       geodesicPathIndices.insert(geodesicPathIndices.end(), restOfPath.begin(), restOfPath.end());
+    }
+    return geodesicPathIndices;
+}
+
+indexPair_t Complex::connectLast(Vertex &endOfPath, indexPair_t lastEdgeOfPath)
+{
+    auto indexOfLastVertexInPath = lastEdgeOfPath.second;
+    auto edgeIndex = branchThatContains(indexOfLastVertexInPath, endOfPath.getIndex());
+    if(edgeIndex == -1)
+    {
+        //the last vertex is already in the path
+        return lastEdgeOfPath;
+    }
+    return this->edges[edgeIndex].edge_as_index_pair();
 }
 
 

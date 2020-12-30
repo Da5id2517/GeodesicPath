@@ -482,8 +482,8 @@ TEST_CASE("Base functionality tests")
     Vertex v0, v1(0.0, 50.0, 10.0, 1), v2(0.0, 25.0, 0.0, 2), v3(0.0, 25.0, 25.0, 3);
     std::vector<Vertex> vertices = {v0, v1, v2, v3};
     std::vector<std::vector<int>> indices = {{0,1,2}, {0,1,3}};
+    std::vector<Vertex> testPath = {v0, v2, v1};
     Complex testComplex(vertices, indices);
-    auto flippedComplex = testComplex.findGeodesic(v0, v2, v1);
 
     SECTION("Complex visualization test")
     {
@@ -524,18 +524,23 @@ TEST_CASE("Base functionality tests")
 
     }
 
-    SECTION("Generate triangle of random dimensions, output an appropriate .obj file and visualize it")
+    auto resultingPath = testComplex.findGeodesic(testPath);
+
+    SECTION("After algorithm")
     {
 
-        output << flippedComplex;
+        output << testComplex;
 
         REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
         polyscope::registerSurfaceMesh(
-                "Test triangle surface",
+                "After algorithm",
                 geometry->inputVertexPositions,
                 mesh->getFaceVertexList());
 
         polyscope::show();
+
+        std::vector<indexPair_t> expectedPath = {{0,1}};
+        REQUIRE(resultingPath == expectedPath);
     }
 
     SECTION("Generate hexagon of random dimensions, output an appropriate .obj file and visualize it")
