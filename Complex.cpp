@@ -149,9 +149,6 @@ Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, Vertex &start, V
         auto firstTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[0]];
         auto secondTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[1]];
         std::vector<std::vector<int>> new_indices = this->getFaceIndices();
-        //TODO: indices provided are not sorted
-        //visualization bug where the proper figure is gotten but not displayed.
-        // might be improper test usage.
         new_indices[indicesOfTrianglesThatContainCurrent[0]] = {start.getIndex(), current_indices[0], end.getIndex()};
         new_indices[indicesOfTrianglesThatContainCurrent[1]] = {start.getIndex(), joint.getIndex(), end.getIndex()};
         path.erase(++path.begin());
@@ -193,8 +190,8 @@ std::vector<Vertex> Complex::findGeodesic(std::vector<Vertex> &path)
         {
             //not locally shortest
             Complex newTriangulation = this->findLocallyGeodesic(path, *it, *(it+1), *(it+2));
-            return newTriangulation.findGeodesic(path);
-
+            *this = newTriangulation;
+            return this->findGeodesic(path);
         }
     }
     // No more viable joints.
