@@ -30,5 +30,5 @@ private:
 };
 
 std::ostream &operator <<(std::ostream &out, const Vertex &vertex);
-
+std::vector<point_t> verticesToPoints(std::vector<Vertex> &vertices);
 #endif //RSPROJECT_VERTEX_H

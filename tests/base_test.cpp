@@ -1,36 +1,13 @@
 #define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
-#include "../mesh.h"
 #include "../Complex.h"
-#include "../Wedge.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/curve_network.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/surface_mesh.h"
 
 
-TEST_CASE("Wedge class tests")
-{
-    auto test_vertex0 = Vertex(0.0, 0.0, 0.0, 0);
-    auto test_vertex1 = Vertex(0.0 , 1.0, 0.0, 1);
-    auto test_vertex2 = Vertex(1.0, 0.0, 0.0, 2);
-    auto test_edge0 = Edge(test_vertex0, test_vertex1, 0);
-    auto test_edge1 = Edge(test_vertex1, test_vertex2, 1);
-    auto test_edge_faulty1 = Edge(test_vertex2, test_vertex1);
-    Wedge test_wedge(test_edge0, test_edge1);
-
-    SECTION("Constructor throws invalid argument if joints are not joined.")
-    {
-       REQUIRE_THROWS_AS(Wedge(test_edge0, test_edge_faulty1), std::invalid_argument);
-    }
-
-    SECTION("Joint angle calculation.")
-    {
-        auto angle = test_wedge.wedge_angle();
-        REQUIRE(abs(angle - M_PI/4) <= std::numeric_limits<double>::epsilon());
-    }
-
-}
 
 TEST_CASE("Vertex class tests")
 {
@@ -111,7 +88,6 @@ TEST_CASE("Edge class tests")
         Vertex vertex0;
         Vertex vertex1(1.0, 1.0, 0.0, 1);
         Vertex vertex2(1.2, 1.2, 1.2, 2);
-        Vertex vertex_index_collision(5.0, 5.0, 5.0, 0);
 
         Edge edge01(vertex0, vertex1), edge10(vertex1, vertex0);
         Edge edge02(vertex0, vertex2), edge12(vertex1, vertex2);
@@ -468,29 +444,125 @@ TEST_CASE("A0 and A1 tests")
 }
 
 
-TEST_CASE("Base functionality tests")
+TEST_CASE("Visualization tests")
 {
     std::ofstream output("test.obj");
-
-    int rows = 25;
-    int columns = 50;
 
     std::unique_ptr<geometrycentral::surface::SurfaceMesh> mesh;
     std::unique_ptr<geometrycentral::surface::VertexPositionGeometry> geometry;
 
-
+    //  EXAMPLE 0 setup ------------------------------------------------------------------------------------------------
     Vertex v0, v1(0.0, 50.0, 10.0, 1), v2(0.0, 25.0, 0.0, 2), v3(0.0, 25.0, 25.0, 3);
-    std::vector<Vertex> vertices = {v0, v1, v2, v3};
-    std::vector<std::vector<int>> indices = {{0,1,2}, {0,1,3}};
+    std::vector<Vertex> example0_vertices = {v0, v1, v2, v3};
+    std::vector<std::vector<int>> example0_indices = {{0,1,2}, {0,1,3}};
 
-    Complex testComplex(vertices, indices);
+    std::vector<Vertex> testPathExample0 = {v2, v0, v1, v3};
+    std::vector<Vertex> expectedPathExample0 = {v2, v3};
 
-    SECTION("Complex visualization test")
+    Complex example0Complex(example0_vertices, example0_indices);
+    //------------------------------------------------------------------------------------------------------------------
+
+    //  EXAMPLE 1 setup ------------------------------------------------------------------------------------------------
+    Vertex ev0, ev1(0, 50, 0, 1), ev2(0, 40, 20, 2), ev3(0,15,30, 3);
+    Vertex ev4(0, 50, 40, 4), ev5(0, 60, 50, 5);
+    std::vector<Vertex> example1_vertices = {ev0, ev1, ev2, ev3, ev4, ev5};
+    std::vector<std::vector<int>> example1_indices = {{0,1,3}, {1,2,3}, {1,2,4}, {1,4,5}};
+
+    std::vector<Vertex> testPathExample1 = {ev0, ev1, ev5};
+    std::vector<Vertex> expectedPathExample1 = {ev0, ev2, ev5};
+
+    Complex example1Complex(example1_vertices, example1_indices);
+    //------------------------------------------------------------------------------------------------------------------
+
+    SECTION("Example 0 figure before algorithm application")
     {
         polyscope::options::alwaysRedraw = true;
 
         polyscope::init();
 
+        output << example0Complex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Example 0 before algorithm",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
+        polyscope::registerCurveNetworkLine("Example 0 path before algorithm", verticesToPoints(testPathExample0));
+
+        polyscope::show();
+    }
+
+    std::vector<Vertex> resultingPathExample0;
+    auto current = testPathExample0.begin();
+
+    resultingPathExample0 = example0Complex.findGeodesic(testPathExample0, current, resultingPathExample0);
+
+    SECTION("Example 0 after algorithm application")
+    {
+
+        output << example0Complex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Example 0 after algorithm",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
+        REQUIRE(resultingPathExample0 == expectedPathExample0);
+
+        polyscope::registerCurveNetworkLine("Geodesic path Example 0", verticesToPoints(resultingPathExample0));
+
+        polyscope::show();
+    }
+
+    SECTION("Example 1 before algorithm application")
+    {
+        output << example1Complex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Example 1 before algorithm",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
+        polyscope::registerCurveNetworkLine("Example 1 path before algorithm", verticesToPoints(testPathExample1));
+
+        polyscope::show();
+    }
+
+    std::vector<Vertex> resultingPathExample1;
+    current = testPathExample1.begin();
+    resultingPathExample1 = example1Complex.findGeodesic(testPathExample1, current, resultingPathExample1);
+
+    SECTION("Example 1 after algorithm application")
+    {
+        //TODO: fix!
+        output << example1Complex;
+
+        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
+        polyscope::registerSurfaceMesh(
+                "Example 1 after algorithm",
+                geometry->inputVertexPositions,
+                mesh->getFaceVertexList());
+
+        polyscope::show();
+
+        REQUIRE(resultingPathExample1 == expectedPathExample1);
+
+        polyscope::registerCurveNetworkLine("Example 1 geodesic path", verticesToPoints(resultingPathExample1));
+
+        polyscope::show();
+    }
+
+    SECTION("Visualize 3d object test")
+    {
         Vertex vertex0, vertex1(50.0, 0.0, 0.0, 1), vertex2(0.0, 0.0, 50.0, 2);
         Vertex vertex3(0.0, 50.0, 0.0, 3);
         std::vector<Vertex> test_vertices = {vertex0, vertex1, vertex2, vertex3};
@@ -507,54 +579,6 @@ TEST_CASE("Base functionality tests")
 
         polyscope::show();
 
-    }
-
-    SECTION("Algorithm base case test")
-    {
-
-        output << testComplex;
-
-        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
-        polyscope::registerSurfaceMesh(
-                "Before Algorithm",
-                geometry->inputVertexPositions,
-                mesh->getFaceVertexList());
-
-        polyscope::show();
-
-    }
-
-    std::vector<Vertex> testPath = {v2, v0, v1, v3};
-    std::vector<Vertex> expectedPath = {v2, v3};
-    auto resultingPath = testComplex.findGeodesic(testPath);
-
-    SECTION("After algorithm")
-    {
-
-        output << testComplex;
-
-        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
-        polyscope::registerSurfaceMesh(
-                "After algorithm",
-                geometry->inputVertexPositions,
-                mesh->getFaceVertexList());
-
-        polyscope::show();
-
-        REQUIRE(resultingPath == expectedPath);
-    }
-
-    SECTION("Generate hexagon of random dimensions, output an appropriate .obj file and visualize it")
-    {
-        hexagon testHexagon(rows, columns);
-        testHexagon.generate_obj(output);
-        REQUIRE_NOTHROW(std::tie(mesh, geometry) = geometrycentral::surface::readSurfaceMesh("test.obj"));
-        polyscope::registerSurfaceMesh(
-                "Test hexagon surface",
-                geometry->inputVertexPositions,
-                mesh->getFaceVertexList());
-
-        polyscope::show();
     }
 
     output.close();

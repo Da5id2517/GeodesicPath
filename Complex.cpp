@@ -117,22 +117,21 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     return column_vector;
 }
 
-Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, Vertex &start, Vertex &joint, Vertex &end)
+Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &resultPath, std::vector<Vertex>::iterator &current,
+                                     Vertex &start, Vertex &joint, Vertex &end)
 {
 
-    auto segment0Index = branchThatContains(start.getIndex(), joint.getIndex());
-    auto segment1Index = branchThatContains(joint.getIndex(), end.getIndex());
-    if(segment0Index == -1 || segment1Index == -1)
-    {
-        throw std::invalid_argument("No such segments.");
-    }
+    auto startIndex = start.getIndex();
+    auto jointIndex = joint.getIndex();
+    auto endIndex = end.getIndex();
 
-    auto current_indices = thirdTriangleVertexIndex(start.getIndex(), joint.getIndex());
+    auto current_indices = thirdTriangleVertexIndex(startIndex, jointIndex);
 
     // if start, joint and end form a triangle the wedge has a degree of 1 and the path is the edge formed by start and end.
-    if(current_indices[0] == end.getIndex())
+    if(current_indices[0] == endIndex)
     {
-        path.erase(++path.begin());                         //remove joint
+        resultPath.erase(++resultPath.begin());                   //remove joint
+        path.erase(++path.begin());
         return *this;
     }
 
@@ -146,56 +145,59 @@ Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, Vertex &start, V
 
     if(abs(angle_sum_of_start - M_PI) > std::numeric_limits<double>::epsilon())
     {
-        auto firstTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[0]];
-        auto secondTriangle = faceIndices[indicesOfTrianglesThatContainCurrent[1]];
         std::vector<std::vector<int>> new_indices = this->getFaceIndices();
-        new_indices[indicesOfTrianglesThatContainCurrent[0]] = {start.getIndex(), current_indices[0], end.getIndex()};
-        new_indices[indicesOfTrianglesThatContainCurrent[1]] = {start.getIndex(), joint.getIndex(), end.getIndex()};
-        path.erase(++path.begin());
+        int adjacentToCurrent;
+        if(this->branchThatContains(current_indices[0], endIndex) != -1)
+        {
+            adjacentToCurrent = endIndex;
+        }
+        else
+        {
+            auto adjacentToCurrentIndex = thirdTriangleVertexIndex(current_indices[0], jointIndex);
+            auto it = std::find_if_not(adjacentToCurrentIndex.begin(), adjacentToCurrentIndex.end(),
+                                   [startIndex](auto i){return i == startIndex;});
+            adjacentToCurrent = *it;
+        }
+
+        new_indices[indicesOfTrianglesThatContainCurrent[0]] = {startIndex, current_indices[0], adjacentToCurrent};
+        new_indices[indicesOfTrianglesThatContainCurrent[1]] = {startIndex, jointIndex, adjacentToCurrent};
+        if(resultPath.size() == 2) {
+            resultPath.push_back(this->vertices[adjacentToCurrent]);
+        } else
+        {
+            resultPath.insert(resultPath.begin() + 1, this->vertices[adjacentToCurrent]);
+        }
+        current += 1;
         return Complex(this->vertices, new_indices);
     }
     return *this;
 }
 
-std::vector<Vertex> Complex::findGeodesic(std::vector<Vertex> &path)
+std::vector<Vertex> Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex>::iterator &current, std::vector<Vertex> &resultPath)
 {
-    //exit from recursion
-    if(path.empty())
+    while( current + 2 != path.end())
     {
-        return {};
-    }
-
-    if(path.size() == 1)
-    {
-        return {path[0]};
-    }
-    if(path.size() == 2)
-    {
-        // Or maybe just return path i dunno?
-        auto pathIndex = branchThatContains(path[0].getIndex(), path[1].getIndex());
-        if(pathIndex == -1)
+        auto start = *current;
+        auto joint = *(current + 1);
+        auto end = *(current + 2);
+        Triangle phantomTriangle(start, joint, end);
+        if(resultPath.empty())
         {
-            throw std::invalid_argument("Improper path.");
+            resultPath = phantomTriangle.getVertices();
         }
-        auto vertexIndices = this->getEdgeVertexAdjacencyMatrix().getColumnIndicesWithinRow(pathIndex);
-        std::vector<Vertex> resultingVertices = {this->vertices[vertexIndices[0]], this->vertices[vertexIndices[1]]};
-        return resultingVertices;
-    }
 
-    for(auto it = path.begin(); it != path.end() - 2; it++)
-    {
-        Triangle phantomTriangle(*it, *(it+1), *(it+2));
         //TODO: is current joint flexible?
-        if(abs(phantomTriangle.getAngleByVertexIndex((it+1)->getIndex()) - M_PI) > std::numeric_limits<double>::epsilon())
+        if(abs(phantomTriangle.getAngleByVertexIndex(joint.getIndex()) - M_PI) > std::numeric_limits<double>::epsilon())
         {
             //not locally shortest
-            Complex newTriangulation = this->findLocallyGeodesic(path, *it, *(it+1), *(it+2));
+            Complex newTriangulation = this->findLocallyGeodesic(path, resultPath, current, start, joint, end);
             *this = newTriangulation;
-            return this->findGeodesic(path);
+            return this->findGeodesic(path, current, resultPath);
         }
     }
     // No more viable joints.
-    return path;
+    resultPath.erase(resultPath.begin() +1); //pop joint
+    return resultPath;
 }
 
 

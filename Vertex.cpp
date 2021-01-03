@@ -57,3 +57,14 @@ std::ostream &operator << (std::ostream &out, const Vertex &vertex)
     out << "v " << point.x << " " << point.y << " " << point.z << std::endl;
     return out;
 }
+
+std::vector<point_t> verticesToPoints(std::vector<Vertex> &vertices)
+{
+    std::vector<point_t> result;
+    for(auto &vertex : vertices)
+    {
+        result.push_back(vertex.getPoint());
+    }
+    return result;
+}
+

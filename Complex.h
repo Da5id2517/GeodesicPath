@@ -19,8 +19,9 @@ public:
     std::vector<int> triangleIndicesThatContain(int vertexId);
 
     //returns a vector of vertex indices of the geodesic path.
-    std::vector<Vertex> findGeodesic(std::vector<Vertex> &path);
-    Complex findLocallyGeodesic(std::vector<Vertex> &path, Vertex &start, Vertex &joint, Vertex &end);
+    std::vector<Vertex> findGeodesic(std::vector<Vertex> &path,std::vector<Vertex>::iterator &current, std::vector<Vertex> &resultPath);
+    Complex findLocallyGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &resultPath, std::vector<Vertex>::iterator &current,
+                                Vertex &start, Vertex &joint, Vertex &end);
     int branchThatContains(int start_index, int end_index);
     std::vector<int> thirdTriangleVertexIndex(int index0, int index1);
 
