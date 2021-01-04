@@ -72,10 +72,10 @@ bool Edge::operator == (const Edge &other) const
     auto equal_edge_indices = this->getIndex() == other.getIndex();
     auto equal_edge_lengths = this->edgeLength() == other.edgeLength();
 
-    if(equal_edge_lengths && equal_index_pairs && !equal_edge_indices)
-    {
-        throw std::invalid_argument("Duplicate branch with a different index.");
-    }
+//    if(equal_edge_lengths && equal_index_pairs && !equal_edge_indices)
+//    {
+//        throw std::invalid_argument("Duplicate branch with a different index.");
+//    }
 
     return equal_index_pairs && equal_edge_indices && equal_edge_lengths;
 }

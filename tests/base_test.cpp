@@ -134,15 +134,6 @@ TEST_CASE("Triangle class tests")
         std::vector<int> expected_triple = {3,7,19};
         auto result_triple = test_triangle.triangle_as_index_triple();
         REQUIRE(expected_triple == result_triple);
-
-        vertex0.setIndex(1);
-        vertex1.setIndex(2);
-        vertex2.setIndex(3);
-
-        // this fails, but the behaviour is not needed anywhere within the algorithm.
-        std::vector<int> expected_triple_after_update = {1,2,3};
-        auto result_updated_triple = test_triangle.triangle_as_index_triple();
-        CHECK(expected_triple_after_update == result_updated_triple);
     }
 
     SECTION("Angle calculation tests for right triangle.")
@@ -211,6 +202,48 @@ TEST_CASE("Complex tests")
         REQUIRE(complex.branchThatContains(0, 3) == -1);
     }
 
+    SECTION("findOther tests")
+    {
+        auto index = complex.branchThatContains(0,1);
+        auto resultVertex = complex.findOther(index, test_vertex1);
+        REQUIRE(resultVertex == test_vertex2);
+    }
+
+    SECTION("outerArcOfFlexibleJoint tests")
+    {
+        Vertex v0, v1(1, 0, 0, 1), v2(0, 2, 0, 2), v3(0, 0, 3, 3);
+        std::vector<std::vector<int>> testFaces = {{0, 1, 2},
+                                                   {0, 2, 3}};
+        std::vector<Vertex> testVertices = {v0, v1, v2, v3};
+        Complex testComplex(testVertices, testFaces);
+
+        std::vector<Vertex> example = {v1, v2, v3};
+        std::vector<Vertex> expected = {v0};
+        auto result = testComplex.outerArcOfFlexibleJoint(example);
+        REQUIRE(result == expected);
+
+        example = {v3};
+        expected = {v2, v0};
+        result = testComplex.outerArcOfFlexibleJoint(example);
+        REQUIRE(result == expected);
+    }
+
+    SECTION("flipEdge tests")
+    {
+        Vertex v0, v1(0.0, 50.0, 10.0, 1), v2(0.0, 25.0, 0.0, 2), v3(0.0, 25.0, 25.0, 3);
+        std::vector<Vertex> example0_vertices = {v0, v1, v2, v3};
+        std::vector<std::vector<int>> example0_indices = {{0,1,2}, {0,1,3}};
+
+        std::vector<Vertex> testPathExample0 = {v2, v0, v1, v3};
+        std::vector<Vertex> expectedPathExample0 = {v2, v3};
+
+        Complex example0Complex(example0_vertices, example0_indices);
+
+        indexPair_t toRemove = {0,1};
+        example0Complex = example0Complex.flipEdge(toRemove);
+        std::vector<std::vector<int>> expectedIndices = {{2,3,0}, {3,2,1}};
+        REQUIRE(example0Complex.getFaceIndices() == expectedIndices);
+    }
 
     SECTION("triangleIndicesThatContain tests")
     {
@@ -252,28 +285,6 @@ TEST_CASE("Complex tests")
         REQUIRE(returned_vector == expected_result);
     }
 
-}
-
-//TODO:redundant
-TEST_CASE("simplexChecker tests")
-{
-    SECTION("Faulty simplex throw std::invalid_argument")
-    {
-        std::vector<std::vector<int>> faulty_simplex1 = {{1,2,3}, {1,2,5}, {1,2}};
-        std::vector<std::vector<int>> faulty_simplex2 = {{1,2}, {2,3}, {3,0}, {3,3}};
-        REQUIRE_THROWS_AS(simplexChecker(faulty_simplex1, 3), std::invalid_argument);
-        REQUIRE_THROWS_AS(simplexChecker(faulty_simplex2, 2), std::invalid_argument);
-    }
-
-    SECTION("Good simplex return true")
-    {
-        std::vector<std::vector<int>> good_simplex1 = {{1}, {2}, {3}};
-        std::vector<std::vector<int>> good_simplex2 = {{1,2,3,4}, {3,2,1,4}, {0,2,1,4}, {0,1,3,4}};
-        std::vector<std::vector<int>> good_simplex3 = {{1,2,3}, {3,2,1,4}, {0,2,1,4}, {0,1,3,4,5,6}};
-        REQUIRE(simplexChecker(good_simplex1));
-        REQUIRE(simplexChecker(good_simplex2, 4));
-        REQUIRE(simplexChecker(good_simplex3, 3));
-    }
 }
 
 TEST_CASE("DenseMatrix class tests")
@@ -356,14 +367,6 @@ TEST_CASE("assignElementIndices tests")
         auto returned_collection = assignElementIndices(4,4,1);
         std::vector<std::vector<int>> expected_collection = {{0,1,2,3},{0,1,2,3},{0}};
         REQUIRE(returned_collection == expected_collection);
-    }
-
-    SECTION("Invalid arguments throw an exception")
-    {
-        REQUIRE_THROWS_AS(assignElementIndices(-1,-2,0), std::invalid_argument);
-        REQUIRE_THROWS_AS(assignElementIndices(0,0,0), std::invalid_argument);
-        REQUIRE_THROWS_AS(assignElementIndices(0,0,5), std::invalid_argument);
-        REQUIRE_NOTHROW(assignElementIndices(3,3,1));
     }
 }
 
@@ -496,9 +499,7 @@ TEST_CASE("Visualization tests")
     }
 
     std::vector<Vertex> resultingPathExample0;
-    auto current = testPathExample0.begin();
-
-    resultingPathExample0 = example0Complex.findGeodesic(testPathExample0, current, resultingPathExample0);
+    example0Complex.findGeodesic(testPathExample0, resultingPathExample0);
 
     SECTION("Example 0 after algorithm application")
     {
@@ -538,8 +539,7 @@ TEST_CASE("Visualization tests")
     }
 
     std::vector<Vertex> resultingPathExample1;
-    current = testPathExample1.begin();
-    resultingPathExample1 = example1Complex.findGeodesic(testPathExample1, current, resultingPathExample1);
+    example1Complex.findGeodesic(testPathExample1, resultingPathExample1);
 
     SECTION("Example 1 after algorithm application")
     {

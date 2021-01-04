@@ -5,32 +5,45 @@ Complex::Complex(std::vector<Vertex> &vertices, std::vector<std::vector<int>> &f
     this->vertices = vertices;
     this->faceIndices = face_indices;
     //Assume that vertex indices are sorted
+
+    std::vector<std::vector<int>> trianglesAsEdgeIndexTriples;
+
     int i = 0, j = 0;
     for(auto &face : face_indices)
     {
+        std::vector<int> triangleAsEdgeIndexTriple;
         Triangle triangle(vertices[face[0]], vertices[face[1]], vertices[face[2]], i);
 
         auto triangle_edges = triangle.getEdges();
         for(auto &edge: triangle_edges)
         {
+            auto isContained = std::find(this->edges.begin(), this->edges.end(), edge);
             // if edge is already in edges do not add it.
-            if(!std::count(this->edges.begin(), this->edges.end(), edge))
+            if(isContained == this->edges.end())
             {
                 // if not adjust index and add it.
                 triangle.setEdgeIndex(j, edge);
+                triangleAsEdgeIndexTriple.push_back(j);
                 this->edges.push_back(edge);
                 j++;
             }
+            else
+            {
+                triangleAsEdgeIndexTriple.push_back(isContained - this->edges.begin());
+                triangle.setEdgeIndex(isContained - this->edges.begin(), edge);
+            }
+
         }
         this->faces.push_back(triangle);
+        trianglesAsEdgeIndexTriples.push_back(triangleAsEdgeIndexTriple);
         i++;
     }
 
     this->indices = assignElementIndices(this->vertices.size(), j, i);
     auto edgesAsIndexPairs = this->edges_as_index_pairs();
-    auto trianglesAsIndexTriples = this->triangles_as_index_triples();
+
     this->edgeVertexAdjacencyMatrix = buildVertexEdgeAdjacencyMatrix(indices, edgesAsIndexPairs);
-    this->faceEdgeAdjacencyMatrix = buildEdgeFaceAdjacencyMatrix(indices, trianglesAsIndexTriples);
+    this->faceEdgeAdjacencyMatrix = buildEdgeFaceAdjacencyMatrix(indices, trianglesAsEdgeIndexTriples);
 }
 
 std::vector<Vertex> Complex::getVertices()
@@ -62,17 +75,6 @@ std::vector<indexPair_t> Complex::edges_as_index_pairs()
     return edgesAsIndexPairs;
 }
 
-std::vector<std::vector<int>> Complex::triangles_as_index_triples()
-{
-    std::vector<std::vector<int>> trianglesAsTriples(this->faces.size());
-    int i = 0;
-    for(auto &face: this->faces)
-    {
-        trianglesAsTriples[i] = face.triangle_as_index_triple();
-        i++;
-    }
-    return trianglesAsTriples;
-}
 
 std::vector<int> Complex::vertexIndices()
 {
@@ -117,87 +119,74 @@ std::vector<int> Complex::buildVertexVector(std::vector<int> &vertices_subset)
     return column_vector;
 }
 
-Complex Complex::findLocallyGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &resultPath, std::vector<Vertex>::iterator &current,
-                                     Vertex &start, Vertex &joint, Vertex &end)
+
+void Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &geodesicPath)
 {
-
-    auto startIndex = start.getIndex();
-    auto jointIndex = joint.getIndex();
-    auto endIndex = end.getIndex();
-
-    auto current_indices = thirdTriangleVertexIndex(startIndex, jointIndex);
-
-    // if start, joint and end form a triangle the wedge has a degree of 1 and the path is the edge formed by start and end.
-    if(current_indices[0] == endIndex)
+    if(geodesicPath.empty())
     {
-        resultPath.erase(++resultPath.begin());                   //remove joint
-        path.erase(++path.begin());
-        return *this;
+        geodesicPath.push_back(*path.begin());
+    }
+    auto current = path.begin();
+
+    //recursion exit
+    if(path.size() == 2)
+    {
+        geodesicPath = path;
+        return;
     }
 
-    auto indicesOfTrianglesThatContainCurrent = triangleIndicesThatContain(current_indices[0]);
-    double angle_sum_of_start = 0.0;
+    //if outer arc is empty it is a 0 degree wedge.
+    auto outerArc = outerArcOfFlexibleJoint(path);
 
-    for(auto index : indicesOfTrianglesThatContainCurrent)
+    for(auto nodeIt = outerArc.begin(); nodeIt != outerArc.end(); nodeIt++)
     {
-        angle_sum_of_start += faces[index].getAngleByVertexIndex(current_indices[0]);
+        auto triangleIndicesThatContainNode = triangleIndicesThatContain(nodeIt->getIndex());
+        double nodeAngleSum = 0.0;
+        for(auto & triangleIndex : triangleIndicesThatContainNode)
+        {
+            nodeAngleSum += faces[triangleIndex].getAngleByVertexIndex(nodeIt->getIndex());
+        }
+        if(abs(nodeAngleSum - M_PI) >= std::numeric_limits<double>::epsilon())
+        {
+            //Beta i < pi => flip the edges
+            auto edgesOutOfNode = this->getEdgeVertexAdjacencyMatrix().getRowIndicesWithinColumn(nodeIt->getIndex());
+            indexPair_t toRemove;
+            toRemove.first = nodeIt->getIndex();
+            for(auto & edgeId : edgesOutOfNode)
+            {
+                auto other = findOther(edgeId, *nodeIt);
+                if(other == *(path.end()))
+                {
+                    toRemove.second = (current + 1)->getIndex();
+                    geodesicPath.push_back(other);
+                    Complex newTriangulation = this->flipEdge(toRemove);
+                    *this = newTriangulation;
+                    return;
+
+                }
+                if(*(nodeIt + 1) == other)
+                {
+                    toRemove.second = (nodeIt + 1)->getIndex();
+                    geodesicPath.push_back(*(nodeIt + 1));
+                    break;
+                }
+                //if previous or node in path continue
+                if(nodeIt != outerArc.begin() && other == *(nodeIt-1)
+                && std::find(path.begin(), path.end(), other) != path.end())
+                {
+                    continue;
+                }
+            }
+        }
     }
 
-    if(abs(angle_sum_of_start - M_PI) > std::numeric_limits<double>::epsilon())
+    //outer arc was empty <=> all vertices belong to path
+    // wedge start and joint form a triangle
+    if(geodesicPath.size() == 1)
     {
-        std::vector<std::vector<int>> new_indices = this->getFaceIndices();
-        int adjacentToCurrent;
-        if(this->branchThatContains(current_indices[0], endIndex) != -1)
-        {
-            adjacentToCurrent = endIndex;
-        }
-        else
-        {
-            auto adjacentToCurrentIndex = thirdTriangleVertexIndex(current_indices[0], jointIndex);
-            auto it = std::find_if_not(adjacentToCurrentIndex.begin(), adjacentToCurrentIndex.end(),
-                                   [startIndex](auto i){return i == startIndex;});
-            adjacentToCurrent = *it;
-        }
-
-        new_indices[indicesOfTrianglesThatContainCurrent[0]] = {startIndex, current_indices[0], adjacentToCurrent};
-        new_indices[indicesOfTrianglesThatContainCurrent[1]] = {startIndex, jointIndex, adjacentToCurrent};
-        if(resultPath.size() == 2) {
-            resultPath.push_back(this->vertices[adjacentToCurrent]);
-        } else
-        {
-            resultPath.insert(resultPath.begin() + 1, this->vertices[adjacentToCurrent]);
-        }
-        current += 1;
-        return Complex(this->vertices, new_indices);
+        path.erase(path.begin() + 1);
+        findGeodesic(path, geodesicPath);
     }
-    return *this;
-}
-
-std::vector<Vertex> Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex>::iterator &current, std::vector<Vertex> &resultPath)
-{
-    while( current + 2 != path.end())
-    {
-        auto start = *current;
-        auto joint = *(current + 1);
-        auto end = *(current + 2);
-        Triangle phantomTriangle(start, joint, end);
-        if(resultPath.empty())
-        {
-            resultPath = phantomTriangle.getVertices();
-        }
-
-        //TODO: is current joint flexible?
-        if(abs(phantomTriangle.getAngleByVertexIndex(joint.getIndex()) - M_PI) > std::numeric_limits<double>::epsilon())
-        {
-            //not locally shortest
-            Complex newTriangulation = this->findLocallyGeodesic(path, resultPath, current, start, joint, end);
-            *this = newTriangulation;
-            return this->findGeodesic(path, current, resultPath);
-        }
-    }
-    // No more viable joints.
-    resultPath.erase(resultPath.begin() +1); //pop joint
-    return resultPath;
 }
 
 
@@ -221,6 +210,47 @@ std::vector<int> Complex::thirdTriangleVertexIndex(int index0, int index1)
         }
     }
     return result;
+}
+
+std::vector<Vertex> Complex::outerArcOfFlexibleJoint(std::vector<Vertex> &flexibleJoint)
+{
+    auto matrix = this->getEdgeVertexAdjacencyMatrix();
+    std::vector<Vertex> result;
+    for(auto & node : flexibleJoint)
+    {
+        auto indicesOfEdgesThatContainNode = matrix.getRowIndicesWithinColumn(node.getIndex());
+        for(auto & index : indicesOfEdgesThatContainNode)
+        {
+            auto other = findOther(index, node);
+            if(std::find(result.begin(), result.end(), other) == result.end()
+            && std::find(flexibleJoint.begin(), flexibleJoint.end(), other) == flexibleJoint.end())
+            {
+                result.push_back(other);
+            }
+        }
+    }
+    return result;
+}
+
+Vertex & Complex::findOther(int edgeIndex, Vertex &current)
+{
+    auto edge = this->edges[edgeIndex];
+    if(edge.getStart() == current)
+        return this->vertices[edge.getEnd().getIndex()];
+    else
+        return this->vertices[edge.getStart().getIndex()];
+}
+
+Complex Complex::flipEdge(indexPair_t toRemove)
+{
+    auto matrix = this->getFaceEdgeAdjacencyMatrix();
+    auto edgeIndex = branchThatContains(toRemove.first, toRemove.second);
+    auto toAddIndices = thirdTriangleVertexIndex(toRemove.first, toRemove.second);
+    auto facesThatContainEdge = matrix.getRowIndicesWithinColumn(edgeIndex);
+    auto newFaceIndices = this->getFaceIndices();
+    newFaceIndices[facesThatContainEdge[0]] = {toAddIndices[0], toAddIndices[1], toRemove.first};
+    newFaceIndices[facesThatContainEdge[1]] = {toAddIndices[1], toAddIndices[0], toRemove.second};
+    return Complex(this->vertices, newFaceIndices);
 }
 
 int Complex::branchThatContains(int start_index, int end_index)

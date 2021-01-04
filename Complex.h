@@ -10,20 +10,18 @@ public:
     SparseMatrix getEdgeVertexAdjacencyMatrix();
     SparseMatrix getFaceEdgeAdjacencyMatrix();
     std::vector<indexPair_t> edges_as_index_pairs();
-    std::vector<std::vector<int>> triangles_as_index_triples();
     std::vector<std::vector<int>> getFaceIndices();
     std::vector<Vertex> getVertices();
     std::vector<Triangle> getFaces();
     std::vector<int> vertexIndices();
     std::vector<int> buildVertexVector(std::vector<int> &vertices);
     std::vector<int> triangleIndicesThatContain(int vertexId);
-
-    //returns a vector of vertex indices of the geodesic path.
-    std::vector<Vertex> findGeodesic(std::vector<Vertex> &path,std::vector<Vertex>::iterator &current, std::vector<Vertex> &resultPath);
-    Complex findLocallyGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &resultPath, std::vector<Vertex>::iterator &current,
-                                Vertex &start, Vertex &joint, Vertex &end);
+    Vertex & findOther(int edgeIndex, Vertex &current);
+    void findGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &geodesicPath);
     int branchThatContains(int start_index, int end_index);
     std::vector<int> thirdTriangleVertexIndex(int index0, int index1);
+    std::vector<Vertex> outerArcOfFlexibleJoint(std::vector<Vertex> &flexibleJoint);
+    Complex flipEdge(indexPair_t toRemove);
 
 private:
     std::vector<Vertex> vertices;

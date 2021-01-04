@@ -10,12 +10,6 @@ double SafeAcos (double x)
 
 std::vector<std::vector<int>> assignElementIndices(int number_of_vertices, int number_of_edges, int number_of_faces)
 {
-//    //TODO: right side of the formula should be 2 - 2g
-//    if(number_of_vertices - number_of_edges + number_of_faces != 1)
-//        throw std::invalid_argument("The arguments provided must satisfy Euler's formula.");
-//    if(number_of_vertices < 0 || number_of_edges < 0 || number_of_faces < 0)
-//        throw std::invalid_argument("Input must be non negative integers.");
-
     std::vector<std::vector<int>> result_collection(3);
     std::vector<int> vertex_indices(number_of_vertices);
     std::vector<int> edge_indices(number_of_edges);
@@ -81,27 +75,5 @@ SparseMatrix buildEdgeFaceAdjacencyMatrix(std::vector<std::vector<int>> &indices
     }
 
     return SparseMatrix(denseMatrix);
-}
-
-//TODO: remove.
-bool simplexChecker(std::vector<std::vector<int>> &simplices, int k)
-{
-    if(std::count_if(simplices.begin(), simplices.end(), [k](auto tuple){return tuple.size() < k;}))
-    {
-        throw std::invalid_argument("All simplices must have at least " + std::to_string(k) + " elements.");
-    }
-
-    auto lambda = [](std::vector<int> &tuple)
-            {
-        std::unordered_set<int> tmp;
-        tmp.insert(tuple.cbegin(), tuple.cend());
-        return tuple.size() > tmp.size();
-            };
-
-    if(std::count_if(simplices.begin(), simplices.end(), lambda))
-    {
-        throw std::invalid_argument("Tuples cannot contain duplicates.");
-    }
-    return true;
 }
 
