@@ -23,7 +23,7 @@ Za vizualizaciju projekat koristi sledeće biblioteke:
 - Trougao
 - Kompleks
 
-![primer rada algoritma](https://imgur.com/s9iVXds)
+![primer rada algoritma](./AlgorithmExample.png)
 
 ## Developers
 
