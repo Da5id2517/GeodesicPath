@@ -126,7 +126,6 @@ void Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &geode
     {
         geodesicPath.push_back(*path.begin());
     }
-    auto current = path.begin();
 
     //recursion exit
     if(path.size() == 2)
@@ -152,12 +151,27 @@ void Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &geode
             auto edgesOutOfNode = this->getEdgeVertexAdjacencyMatrix().getRowIndicesWithinColumn(nodeIt->getIndex());
             indexPair_t toRemove;
             toRemove.first = nodeIt->getIndex();
+            Vertex joint;
             for(auto & edgeId : edgesOutOfNode)
             {
                 auto other = findOther(edgeId, *nodeIt);
-                if(other == *(path.end()))
+
+                //if previous or node in path continue
+                if(nodeIt != outerArc.begin() || other == *(nodeIt-1)
+                   || *path.begin() == other)
                 {
-                    toRemove.second = (current + 1)->getIndex();
+                    continue;
+                }
+
+                if(std::find(path.begin()+1, path.end(), other) != path.end() && !(other == *(path.end()-1)))
+                {
+                    joint = other;
+                    continue;
+                }
+
+                if(other == *(path.end() - 1))
+                {
+                    toRemove.second = joint.getIndex();
                     geodesicPath.push_back(other);
                     Complex newTriangulation = this->flipEdge(toRemove);
                     *this = newTriangulation;
@@ -166,15 +180,14 @@ void Complex::findGeodesic(std::vector<Vertex> &path, std::vector<Vertex> &geode
                 }
                 if(*(nodeIt + 1) == other)
                 {
-                    toRemove.second = (nodeIt + 1)->getIndex();
-                    geodesicPath.push_back(*(nodeIt + 1));
-                    break;
-                }
-                //if previous or node in path continue
-                if(nodeIt != outerArc.begin() && other == *(nodeIt-1)
-                && std::find(path.begin(), path.end(), other) != path.end())
-                {
-                    continue;
+                    toRemove.second = path[1].getIndex();
+                    geodesicPath.push_back(other);
+                    Complex newTriangulation = this->flipEdge(toRemove);
+                    *this= newTriangulation;
+                    path.insert(path.begin() + 1, *nodeIt);
+                    path.insert(path.begin() + 2, other);
+                    this->findGeodesic(path, geodesicPath);
+                    return;
                 }
             }
         }
