@@ -27,7 +27,12 @@ Za vizualizaciju projekat koristi sledeće biblioteke:
 - Trougao
 - Kompleks
 
-![primer rada algoritma](./AlgorithmExample.png)
+##Primer rada algoritma
+
+Slike su dobijene kao rezultati pokretanja testova Example0 i Example1
+
+![primer0](./images/AlgorithmExample.png)
+![primer1](./images/Example1Algorithm.png)
 
 ## Developers
 
