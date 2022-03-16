@@ -1,0 +1,38 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+NO_MERCY_FLAGS = [
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+]
+
+cc_library(
+    name="geodesicpath",
+    srcs = [
+        "face.cpp",
+        "vertex.cpp",
+        "edge.cpp"
+    ],
+    hdrs = [
+      "point.h",
+      "face.h",
+      "vertex.h",
+      "edge.h"
+    ],
+    copts = ["-std=c++17"] + NO_MERCY_FLAGS,
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name="tests",
+    srcs=[
+        "tests/face_tests.cpp",
+        "tests/vertex_tests.cpp",
+        "tests/edge_tests.cpp",
+    ],
+    copts=["-std=c++17"] + NO_MERCY_FLAGS,
+    deps =[
+        "geodesicpath",
+        "@gtest//:gtest_main",
+    ],
+)

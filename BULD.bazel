@@ -1,0 +1,5 @@
+exports_files([
+    ".clang-format",
+    "compile_commands.json",
+    "WORKSPACE",
+])
