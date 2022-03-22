@@ -9,15 +9,11 @@ NO_MERCY_FLAGS = [
 cc_library(
     name="geodesicpath",
     srcs = [
-        "face.cpp",
-        "vertex.cpp",
-        "edge.cpp"
+        "mesh.cpp",
     ],
     hdrs = [
       "point.h",
-      "face.h",
-      "vertex.h",
-      "edge.h"
+      "mesh.h",
     ],
     copts = ["-std=c++17"] + NO_MERCY_FLAGS,
     visibility = ["//visibility:public"],
@@ -26,9 +22,8 @@ cc_library(
 cc_test(
     name="tests",
     srcs=[
-        "tests/face_tests.cpp",
-        "tests/vertex_tests.cpp",
-        "tests/edge_tests.cpp",
+        "tests/point_tests.cpp",
+        "tests/mesh_tests.cpp",
     ],
     copts=["-std=c++17"] + NO_MERCY_FLAGS,
     deps =[

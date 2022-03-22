@@ -1,54 +1,41 @@
 #ifndef GEODESIC_PATH_MESH_H
 #define GEODESIC_PATH_MESH_H
-#ifndef RSPROJECT_COMPLEX_H
-#define RSPROJECT_COMPLEX_H
 
-#include "face.h"
+#include <vector>
+
+#include "point.h"
 
 namespace gp {
 namespace {
-struct Triple {
-  int first;
-  int second;
-  int third;
+struct Triangle {
+  Point a;
+  Point b;
+  Point c;
 };
 
 } // namespace
 
 class Mesh {
 public:
-  Mesh(std::vector<Point> &vertices, std::vector<Triple> &face_indices);
+  Mesh();
+  explicit Mesh(std::vector<Point> &vertices, std::vector<Triangle> &faces);
 
-  SparseMatrix getEdgeVertexAdjacencyMatrix();
-  SparseMatrix getFaceEdgeAdjacencyMatrix();
-  std::vector<indexPair_t> edges_as_index_pairs();
-  std::vector<std::vector<int>> getFaceIndices();
-  std::vector<Vertex> getVertices();
-  std::vector<Triangle> getFaces();
-  std::vector<int> vertexIndices();
-  std::vector<int> buildVertexVector(std::vector<int> &vertices);
-  std::vector<int> triangleIndicesThatContain(int vertexId);
-  Vertex &findOther(int edgeIndex, Vertex &current);
-  void findGeodesic(std::vector<Vertex> &path,
-                    std::vector<Vertex> &geodesicPath);
-  int branchThatContains(int start_index, int end_index);
-  std::vector<int> thirdTriangleVertexIndex(int index0, int index1);
-  std::vector<Vertex>
-  outerArcOfFlexibleJoint(std::vector<Vertex> &flexibleJoint);
-  Complex flipEdge(indexPair_t toRemove);
+  const std::vector<Point> &Vertices() const { return vertices_; }
+  const std::vector<Triangle> &Triangles() const { return triangles_; }
+
+  double Area() const;
 
 private:
-  std::vector<Vertex> vertices;
-  std::vector<Edge> edges;
-  std::vector<Triangle> faces;
-  std::vector<std::vector<int>> indices;
-  std::vector<std::vector<int>> faceIndices;
-  SparseMatrix edgeVertexAdjacencyMatrix;
-  SparseMatrix faceEdgeAdjacencyMatrix;
+  std::vector<Point> vertices_{};
+  std::vector<Triangle> triangles_{};
 };
 
-} // namespace gp
+inline double Area(const Triangle &triangle) {
+  const Point a_b{ToVector(triangle.a, triangle.b)};
+  const Point a_c{ToVector(triangle.a, triangle.c)};
+  return std::sqrt(SquaredLength(CrossProduct(a_b, a_c))) / 2;
+}
 
-#endif // RSPROJECT_COMPLEX_H
+} // namespace gp
 
 #endif // GEODESIC_PATH_MESH_H
