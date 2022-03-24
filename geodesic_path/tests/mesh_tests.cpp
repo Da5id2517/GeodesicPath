@@ -10,7 +10,7 @@ TEST(Mesh, Constructor) {
   const Point r{0, 5, 0};
   const Point s{0, 0, 5};
   std::vector<Point> vertices{p, q, r, s};
-  std::vector<Triangle> triangles{{p, q, r}, {q, r, s}};
+  std::vector<Triangle> triangles{{0, 1, 2}, {1, 2, 3}};
   std::vector<Edge> expected_edges{
       {&p, &q, 0}, {&q, &r, 1}, {&r, &p, 2}, {&r, &s, 3}, {&s, &q, 4}};
   const Mesh created(vertices, triangles, expected_edges);
@@ -18,8 +18,10 @@ TEST(Mesh, Constructor) {
 }
 
 TEST(Mesh, TriangleArea) {
-  const Triangle right_triangle{{0, 0, 0}, {5, 0, 0}, {0, 4, 0}};
-  const double right_triangle_area = Area(right_triangle);
+  std::vector<Point> vertices{{0, 0, 0}, {5, 0, 0}, {0, 4, 0}};
+  std::vector<Triangle> right_triangle{{0, 1, 2}};
+  const Mesh mesh(vertices, right_triangle, {});
+  const double right_triangle_area = mesh.Area();
 
   EXPECT_EQ(right_triangle_area, 10);
 }
