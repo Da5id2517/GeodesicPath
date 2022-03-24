@@ -2,15 +2,17 @@
 #define GEODESIC_PATH_MESH_H
 
 #include <vector>
+#include <utility>
 
 #include "point.h"
 
 namespace gp {
 namespace {
+
 struct Triangle {
-  Point a;
-  Point b;
-  Point c;
+  int a;
+  int b;
+  int c;
 };
 
 } // namespace
@@ -18,7 +20,8 @@ struct Triangle {
 class Mesh {
 public:
   Mesh();
-  explicit Mesh(std::vector<Point> &vertices, std::vector<Triangle> &faces);
+  explicit Mesh(std::vector<Point> vertices, std::vector<Triangle> faces):
+  vertices_(std::move(vertices)), faces_(std::move(faces_)){}
 
   const std::vector<Point> &Vertices() const { return vertices_; }
   const std::vector<Triangle> &Triangles() const { return triangles_; }
@@ -31,8 +34,8 @@ private:
 };
 
 inline double Area(const Triangle &triangle) {
-  const Point a_b{ToVector(triangle.a, triangle.b)};
-  const Point a_c{ToVector(triangle.a, triangle.c)};
+  const Point a_b{ToVector(vertices_[triangle.a], vertices_[triangle.b])};
+  const Point a_c{ToVector(vertices_[triangle.a], vertices_[triangle.c])};
   return std::sqrt(SquaredLength(CrossProduct(a_b, a_c))) / 2;
 }
 
