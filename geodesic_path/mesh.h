@@ -31,8 +31,8 @@ inline bool operator!=(const Edge &a, const Edge &b) { return !(a == b); }
 class Mesh {
 public:
   Mesh();
-  explicit Mesh(std::vector<Point> &vertices, std::vector<Triangle> &triangles,
-                std::vector<Edge> &edges);
+  explicit Mesh(std::vector<Point> vertices, std::vector<Triangle> triangles,
+                std::vector<Edge> edges);
 
   const std::vector<Point> &Vertices() const { return vertices_; }
   const std::vector<Triangle> &Triangles() const { return triangles_; }

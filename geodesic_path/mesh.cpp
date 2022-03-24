@@ -4,8 +4,8 @@
 #include "mesh.h"
 
 namespace gp {
-Mesh::Mesh(std::vector<Point> &vertices, std::vector<Triangle> &triangles,
-           std::vector<Edge> &edges)
+Mesh::Mesh(std::vector<Point> vertices, std::vector<Triangle> triangles,
+           std::vector<Edge> edges)
     : vertices_(std::move(vertices)), triangles_(std::move(triangles)),
       edges_(std::move(edges)) {}
 
