@@ -29,11 +29,17 @@ inline double Distance(const Point &a, const Point &b) {
   return std::sqrt(SquaredLength(ToVector(a, b)));
 }
 
+inline double DotProduct(const Point &a, const Point &b) {
+  return (a.x * b.x) + (a.y * b.y) + (a.z + b.z);
+}
+
 inline Point CrossProduct(const Point &a, const Point &b) {
   return {.x = a.y * b.z - a.z * b.y,
           .y = a.z * b.x - a.x * b.z,
           .z = a.x * b.y - a.y * b.x};
 }
+
+inline bool operator<(const Point &a, const Point &b) { return a.x < b.x; }
 
 } // namespace gp
 
