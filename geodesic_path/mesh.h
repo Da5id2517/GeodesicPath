@@ -21,7 +21,7 @@ class Mesh {
 public:
   Mesh();
   explicit Mesh(std::vector<Point> vertices, std::vector<Triangle> faces):
-  vertices_(std::move(vertices)), faces_(std::move(faces_)){}
+  vertices_(std::move(vertices)), faces_(std::move(faces)){}
 
   const std::vector<Point> &Vertices() const { return vertices_; }
   const std::vector<Triangle> &Triangles() const { return triangles_; }
