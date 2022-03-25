@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <limits>
-#include <map>
 
 #include "mesh.h"
 
@@ -28,8 +26,8 @@ int Mesh::VertexIndex(const Point &a) const {
   return std::find(vertices_.begin(), vertices_.end(), a) - vertices_.begin();
 }
 
-std::optional<Pair> Mesh::TriangleContainsPoint(int triangle_index,
-                                                int point_index) const {
+std::optional<Pair> Mesh::AdjacentInTriangle(int triangle_index,
+                                             int point_index) const {
   const auto triangle = triangles_[triangle_index];
   if (triangle.a == point_index) {
     return Pair{triangle.b, triangle.c};
@@ -47,40 +45,71 @@ double Mesh::Distance(int i, int j) const {
   return std::sqrt(SquaredLength(ToVector(vertices_[i], vertices_[j])));
 }
 
-std::vector<int> Mesh::ShortestPath(const Point &a, const Point &b) const {
-  const auto vertices_size = static_cast<int>(vertices_.size());
-  const auto triangles_size = static_cast<int>(triangles_.size());
-  double max = std::numeric_limits<double>::max();
-  int a_index = VertexIndex(a);
-  int b_index = VertexIndex(b);
-  std::vector<int> visited{a_index};
-  std::map<int, double> weight{};
-  for (int i = 0; i < vertices_size; ++i) {
-    weight.insert(std::make_pair(i, max));
-  }
-  for (int i = 0; i < triangles_size; ++i) {
-    std::vector<int> adjacent_indices{};
-    std::optional<Pair> adjacent_in_triangle =
-        TriangleContainsPoint(i, a_index);
-    if (adjacent_in_triangle) {
-      if (std::find(visited.begin(), visited.end(),
-                    adjacent_in_triangle->first) == visited.end()) {
-        visited.push_back(adjacent_in_triangle->first);
-        double distance = Distance(a_index, adjacent_in_triangle->first);
-        weight[adjacent_in_triangle->first] =
-            std::min(distance, weight[adjacent_in_triangle->first]);
-      }
-      if (std::find(visited.begin(), visited.end(),
-                    adjacent_in_triangle->second) == visited.end()) {
-        visited.push_back(adjacent_in_triangle->second);
-        double distance = Distance(a_index, adjacent_in_triangle->second);
-        weight[adjacent_in_triangle->second] =
-            std::min(distance, weight[adjacent_in_triangle->second]);
-      }
+std::vector<int> Mesh::Adjacent(int point_index) const {
+  std::vector<int> result{};
+  const auto size = static_cast<int>(triangles_.size());
+  for (int i = 0; i < size; ++i) {
+    std::optional<Pair> adjacent = AdjacentInTriangle(i, point_index);
+    if (adjacent && (std::find(result.begin(), result.end(), adjacent->first) ==
+                     result.end())) {
+      result.push_back(adjacent->first);
+    }
+    if (adjacent && (std::find(result.begin(), result.end(),
+                               adjacent->second) == result.end())) {
+      result.push_back(adjacent->second);
     }
   }
-  visited.push_back(b_index);
-  return visited;
+  return result;
+}
+
+void Mesh::ShortestPathsLocally(std::map<int, double> &weight,
+                                std::map<int, int> &route,
+                                std::vector<int> &visited, int current) const {
+  const auto size = static_cast<int>(vertices_.size());
+  if (static_cast<int>(visited.size()) == size ||
+      std::find(visited.begin(), visited.end(), current) != visited.end()) {
+    return;
+  }
+  auto adjacent = Adjacent(current);
+  for (const auto adj_index : adjacent) {
+    const auto distance = Distance(current, adj_index);
+    if (weight[current] + distance < weight[adj_index]) {
+      weight[adj_index] = weight[current] + distance;
+      route[adj_index] = current;
+    }
+  }
+  visited.push_back(current);
+  auto next = std::min_element(
+      weight.begin(), weight.end(),
+      [](std::pair<const int, double> lhs, std::pair<const int, double> rhs) {
+        return lhs.second < rhs.second ? lhs.first : rhs.first;
+      });
+  ShortestPathsLocally(weight, route, visited, next->first);
+}
+
+std::vector<int> Mesh::ShortestPaths(int start, int end) const {
+  std::vector<int> path{};
+  const auto size = static_cast<int>(vertices_.size());
+  std::vector<int> visited;
+  visited.reserve(size);
+  std::map<int, double> weight{};
+  std::map<int, int> route{};
+  weight[0] = 0;
+  route[0] = -1;
+  for (int i = 1; i < size; ++i) {
+    weight[i] = std::numeric_limits<double>::max();
+    route[i] = -1;
+  }
+  int current = 0;
+  ShortestPathsLocally(weight, route, visited, current);
+  current = end;
+  while (route[current] != start) {
+    current = route[current];
+    path.push_back(current);
+  }
+  path.push_back(start);
+  std::reverse(path.begin(), path.end());
+  return path;
 }
 
 } // namespace gp

@@ -26,6 +26,8 @@ TEST(Mesh, TriangleArea) {
   EXPECT_EQ(right_triangle_area, 10);
 }
 
+// TODO: add ShortestPaths tests!
+
 //     REQUIRE_NOTHROW(std::tie(mesh, geometry) =
 //                         geometrycentral::surface::readSurfaceMesh("test.obj"));
 //     polyscope::registerSurfaceMesh("Basic Complex visualization test",

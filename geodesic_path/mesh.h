@@ -1,6 +1,7 @@
 #ifndef GEODESIC_PATH_MESH_H
 #define GEODESIC_PATH_MESH_H
 
+#include <map>
 #include <optional>
 #include <vector>
 
@@ -46,9 +47,13 @@ public:
   double Distance(int i, int j) const;
 
   int VertexIndex(const Point &a) const;
-  std::optional<Pair> TriangleContainsPoint(int triangle_index,
-                                            int point_index) const;
-  std::vector<int> ShortestPath(const Point &a, const Point &b) const;
+  std::vector<int> Adjacent(int point_index) const;
+  std::optional<Pair> AdjacentInTriangle(int triangle_index,
+                                         int point_index) const;
+  std::vector<int> ShortestPaths(int start, int end) const;
+  void ShortestPathsLocally(std::map<int, double> &weight,
+                            std::map<int, int> &route,
+                            std::vector<int> &visited, int current) const;
 
 private:
   std::vector<Point> vertices_{};
