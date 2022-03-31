@@ -86,7 +86,7 @@ std::vector<int> ReconstructPath(std::map<const int, Data> data, int start,
 
 std::vector<int> Mesh::ShortestPath(int start, int end) const {
   const auto size = static_cast<int>(vertices_.size());
-  std::vector<int> unvisited;
+  std::vector<int> unvisited(size);
   std::iota(unvisited.begin(), unvisited.end(), 0);
   std::vector<int> visited;
   visited.reserve(size);

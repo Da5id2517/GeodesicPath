@@ -26,6 +26,7 @@ cc_test(
         "tests/mesh_tests.cpp",
     ],
     copts=["-std=c++17"] + NO_MERCY_FLAGS,
+    linkstatic=True,
     deps =[
         "geodesicpath",
         "@gtest//:gtest_main",
