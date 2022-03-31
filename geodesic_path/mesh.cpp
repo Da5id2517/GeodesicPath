@@ -1,12 +1,21 @@
 #include <algorithm>
+#include <map>
+#include <numeric>
 
 #include "mesh.h"
 
 namespace gp {
-Mesh::Mesh(std::vector<Point> vertices, std::vector<Triangle> triangles,
-           std::vector<Edge> edges)
-    : vertices_(std::move(vertices)), triangles_(std::move(triangles)),
-      edges_(std::move(edges)) {}
+
+namespace {
+// TODO: better name.
+struct Data {
+  double weight;
+  int previous;
+};
+} // namespace
+
+Mesh::Mesh(std::vector<Point> vertices, std::vector<Triangle> triangles)
+    : vertices_(std::move(vertices)), triangles_(std::move(triangles)) {}
 
 double Mesh::Area(const Triangle &triangle) const {
   const Point a_b{ToVector(vertices_[triangle.a], vertices_[triangle.b])};
@@ -62,54 +71,60 @@ std::vector<int> Mesh::Adjacent(int point_index) const {
   return result;
 }
 
-void Mesh::ShortestPathsLocally(std::map<int, double> &weight,
-                                std::map<int, int> &route,
-                                std::vector<int> &visited, int current) const {
-  const auto size = static_cast<int>(vertices_.size());
-  if (static_cast<int>(visited.size()) == size ||
-      std::find(visited.begin(), visited.end(), current) != visited.end()) {
-    return;
-  }
-  auto adjacent = Adjacent(current);
-  for (const auto adj_index : adjacent) {
-    const auto distance = Distance(current, adj_index);
-    if (weight[current] + distance < weight[adj_index]) {
-      weight[adj_index] = weight[current] + distance;
-      route[adj_index] = current;
-    }
-  }
-  visited.push_back(current);
-  auto next = std::min_element(
-      weight.begin(), weight.end(),
-      [](std::pair<const int, double> lhs, std::pair<const int, double> rhs) {
-        return lhs.second < rhs.second ? lhs.first : rhs.first;
-      });
-  ShortestPathsLocally(weight, route, visited, next->first);
-}
-
-std::vector<int> Mesh::ShortestPaths(int start, int end) const {
+std::vector<int> ReconstructPath(std::map<const int, Data> data, int start,
+                                 int end) {
   std::vector<int> path{};
-  const auto size = static_cast<int>(vertices_.size());
-  std::vector<int> visited;
-  visited.reserve(size);
-  std::map<int, double> weight{};
-  std::map<int, int> route{};
-  weight[0] = 0;
-  route[0] = -1;
-  for (int i = 1; i < size; ++i) {
-    weight[i] = std::numeric_limits<double>::max();
-    route[i] = -1;
-  }
-  int current = 0;
-  ShortestPathsLocally(weight, route, visited, current);
-  current = end;
-  while (route[current] != start) {
-    current = route[current];
+  int current = end;
+  while (current != start) {
     path.push_back(current);
+    current = data[current].previous;
   }
   path.push_back(start);
   std::reverse(path.begin(), path.end());
   return path;
+}
+
+std::vector<int> Mesh::ShortestPath(int start, int end) const {
+  const auto size = static_cast<int>(vertices_.size());
+  std::vector<int> unvisited;
+  std::iota(unvisited.begin(), unvisited.end(), 0);
+  std::vector<int> visited;
+  visited.reserve(size);
+  std::map<const int, Data> data;
+  for (int i = 0; i < size; ++i) {
+    if (i == start) {
+      data[i] = Data{.weight = 0, .previous = -1};
+      continue;
+    }
+    data[i] =
+        Data{.weight = std::numeric_limits<double>::max(), .previous = -1};
+  }
+
+  auto compare = [](std::pair<const int, Data> &lhs,
+                    std::pair<const int, Data> &rhs) {
+    return lhs.second.weight < rhs.second.weight;
+  };
+
+  int current = start;
+  while (!unvisited.empty()) {
+    auto adjacent = Adjacent(current);
+    for (const auto &neighbour : adjacent) {
+      if (std::find(visited.begin(), visited.end(), neighbour) !=
+          visited.end()) {
+        continue;
+      }
+      auto new_weight = data[current].weight + Distance(current, neighbour);
+      if (new_weight < data[neighbour].weight) {
+        data[neighbour] = Data{.weight = new_weight, .previous = current};
+      }
+    }
+    visited.push_back(current);
+    unvisited.erase(unvisited.begin() + current);
+    current =
+        (*std::min_element(data.begin(), data.end(), compare)).second.weight;
+  }
+
+  return ReconstructPath(data, start, end);
 }
 
 } // namespace gp
