@@ -35,6 +35,8 @@ public:
   std::vector<int> Adjacent(int point_index) const;
   std::optional<Pair> AdjacentInTriangle(int triangle_index,
                                          int point_index) const;
+  std::vector<int> Wedge(const int node) const;
+  std::vector<int> Wedge(const std::vector<int> &nodes) const;
   std::vector<int> ShortestPath(int start, int end) const;
 
 private:

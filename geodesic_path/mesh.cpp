@@ -7,8 +7,7 @@
 namespace gp {
 
 namespace {
-// TODO: better name.
-struct Data {
+struct Route {
   double weight;
   int previous;
 };
@@ -71,13 +70,39 @@ std::vector<int> Mesh::Adjacent(int point_index) const {
   return result;
 }
 
-std::vector<int> ReconstructPath(std::map<const int, Data> data, int start,
+std::vector<int> Mesh::Wedge(const int node) const {
+  // assume nodes is a joint of three nodes for now.
+  std::vector<int> result{};
+  const auto size = static_cast<int>(triangles_.size());
+  for (int i = 0; i < size; ++i) {
+    const auto triangle = triangles_[i];
+    if (triangle.a == node || triangle.b == node || triangle.c == node) {
+      result.push_back(i);
+    }
+  }
+  return result;
+}
+
+std::vector<int> Mesh::Wedge(const std::vector<int> &nodes) const {
+  std::vector<int> result{};
+
+  for (auto current = nodes.begin() + 1; current != nodes.end() - 1;
+       ++current) {
+    // TODO: i do not like the name tmp.
+    const auto tmp = Wedge(*current);
+    result.insert(result.end(), tmp.begin(), tmp.end());
+  }
+
+  return result;
+}
+
+std::vector<int> ReconstructPath(std::map<const int, Route> &routes, int start,
                                  int end) {
   std::vector<int> path{};
   int current = end;
   while (current != start) {
     path.push_back(current);
-    current = data[current].previous;
+    current = routes[current].previous;
   }
   path.push_back(start);
   std::reverse(path.begin(), path.end());
@@ -90,18 +115,18 @@ std::vector<int> Mesh::ShortestPath(int start, int end) const {
   std::iota(unvisited.begin(), unvisited.end(), 0);
   std::vector<int> visited;
   visited.reserve(size);
-  std::map<const int, Data> data;
+  std::map<const int, Route> routes;
   for (int i = 0; i < size; ++i) {
     if (i == start) {
-      data[i] = Data{.weight = 0, .previous = -1};
+      routes[i] = Route{.weight = 0, .previous = -1};
       continue;
     }
-    data[i] =
-        Data{.weight = std::numeric_limits<double>::max(), .previous = -1};
+    routes[i] =
+        Route{.weight = std::numeric_limits<double>::max(), .previous = -1};
   }
 
-  auto compare = [](std::pair<const int, Data> &lhs,
-                    std::pair<const int, Data> &rhs) {
+  auto compare = [](std::pair<const int, Route> &lhs,
+                    std::pair<const int, Route> &rhs) {
     return lhs.second.weight < rhs.second.weight;
   };
 
@@ -113,18 +138,18 @@ std::vector<int> Mesh::ShortestPath(int start, int end) const {
           visited.end()) {
         continue;
       }
-      auto new_weight = data[current].weight + Distance(current, neighbour);
-      if (new_weight < data[neighbour].weight) {
-        data[neighbour] = Data{.weight = new_weight, .previous = current};
+      auto new_weight = routes[current].weight + Distance(current, neighbour);
+      if (new_weight < routes[neighbour].weight) {
+        routes[neighbour] = Route{.weight = new_weight, .previous = current};
       }
     }
     visited.push_back(current);
     unvisited.erase(unvisited.begin() + current);
-    current =
-        (*std::min_element(data.begin(), data.end(), compare)).second.weight;
+    current = (*std::min_element(routes.begin(), routes.end(), compare))
+                  .second.weight;
   }
 
-  return ReconstructPath(data, start, end);
+  return ReconstructPath(routes, start, end);
 }
 
 } // namespace gp

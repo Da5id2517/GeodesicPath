@@ -10,10 +10,12 @@ cc_library(
     name="geodesicpath",
     srcs = [
         "mesh.cpp",
+        "edge_flip.cpp",
     ],
     hdrs = [
       "point.h",
       "mesh.h",
+      "edge_flip.h",
     ],
     copts = ["-std=c++17"] + NO_MERCY_FLAGS,
     visibility = ["//visibility:public"],

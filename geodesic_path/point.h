@@ -39,8 +39,14 @@ inline Point CrossProduct(const Point &a, const Point &b) {
           .z = a.x * b.y - a.y * b.x};
 }
 
-inline bool operator<(const Point &a, const Point &b) { return a.x < b.x; }
+inline double Norm(const Point &vector) {
+  return std::sqrt(DotProduct(vector, vector));
+}
 
+inline Point Normalize(const Point &p) {
+  const auto norm = Norm(p);
+  return {.x = p.x / norm, .y = p.y / norm, .z = p.z / norm};
+}
 } // namespace gp
 
 #endif // GEODESIC_PATH_POINT_H

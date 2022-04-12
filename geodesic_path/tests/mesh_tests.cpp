@@ -53,4 +53,24 @@ TEST(Mesh, ShortestPath) {
   EXPECT_EQ(expected, result);
 }
 
+TEST(Mesh, Wedge) {
+  const std::vector<Point> vertices{{0, 0, 0},   {10, 0, 0},  {15, 5, 0},
+                                    {15, 15, 0}, {10, 20, 0}, {0, 20, 0},
+                                    {-5, 15, 0}, {-5, 5, 0},  {5, 10, 0}};
+  const std::vector<Triangle> triangles{{0, 1, 8}, {1, 2, 8}, {2, 3, 8},
+                                        {3, 4, 8}, {5, 6, 8}, {7, 0, 8}};
+  const auto size = static_cast<int>(triangles.size());
+  const Mesh mesh(vertices, triangles);
+
+  auto result = mesh.Wedge(8);
+  const auto result_size = static_cast<int>(result.size());
+
+  EXPECT_EQ(result_size, size);
+
+  result = mesh.Wedge({0, 1, 2});
+  const std::vector<int> expected{0, 1};
+
+  EXPECT_EQ(result, expected);
+}
+
 } // namespace gp
