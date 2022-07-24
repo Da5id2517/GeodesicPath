@@ -57,6 +57,11 @@ inline int Position(const Point &a, const Point &b, const Point &p) {
                 (AB.x * AP.y - AB.y * AP.x));
 }
 
+inline double Angle(const Point &lhs, const Point &rhs) {
+  // possible domain error for acos
+  return acos(DotProduct(lhs, rhs) / (Norm(lhs) * Norm(rhs)));
+}
+
 } // namespace gp
 
 #endif // GEODESIC_PATH_POINT_H

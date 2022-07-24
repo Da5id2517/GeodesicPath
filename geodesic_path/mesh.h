@@ -39,6 +39,10 @@ public:
   std::vector<int> Wedge(const std::vector<int> &nodes) const;
   std::vector<int> ShortestPath(int start, int end) const;
 
+  Mesh FlipOut(const std::vector<int> &path) const;
+  std::vector<int> VerticesOnOneSideOfWedge(int first, int second,
+                                            int third) const;
+
 private:
   std::vector<Point> vertices_{};
   std::vector<Triangle> triangles_{};

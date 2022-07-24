@@ -11,6 +11,12 @@ struct Route {
   double weight;
   int previous;
 };
+
+struct Joint {
+  int first;
+  int second;
+  int third;
+};
 } // namespace
 
 Mesh::Mesh(std::vector<Point> vertices, std::vector<Triangle> triangles)
@@ -75,8 +81,8 @@ std::vector<int> Mesh::Wedge(const int node) const {
   std::vector<int> result{};
   const auto size = static_cast<int>(triangles_.size());
   for (int i = 0; i < size; ++i) {
-    const auto triangle = triangles_[i];
-    if (triangle.a == node || triangle.b == node || triangle.c == node) {
+    if (triangles_[i].a == node || triangles_[i].b == node ||
+        triangles_[i].c == node) {
       result.push_back(i);
     }
   }
@@ -116,6 +122,7 @@ std::vector<int> Mesh::ShortestPath(int start, int end) const {
   std::vector<int> visited;
   visited.reserve(size);
   std::map<const int, Route> routes;
+  // route initialization
   for (int i = 0; i < size; ++i) {
     if (i == start) {
       routes[i] = Route{.weight = 0, .previous = -1};
@@ -125,6 +132,7 @@ std::vector<int> Mesh::ShortestPath(int start, int end) const {
         Route{.weight = std::numeric_limits<double>::max(), .previous = -1};
   }
 
+  // compare lambda
   auto compare = [](std::pair<const int, Route> &lhs,
                     std::pair<const int, Route> &rhs) {
     return lhs.second.weight < rhs.second.weight;
@@ -150,6 +158,36 @@ std::vector<int> Mesh::ShortestPath(int start, int end) const {
   }
 
   return ReconstructPath(routes, start, end);
+}
+
+std::vector<int> Mesh::VerticesOnOneSideOfWedge(int first, int second,
+                                                int third) const {
+  std::vector<int> result{};
+  auto wedge = Wedge({first, second, third});
+  for (const auto &node : wedge) {
+    // Both are on the positive side
+    if (Position(vertices_[first], vertices_[second], vertices_[node]) == 1 &&
+        Position(vertices_[second], vertices_[third], vertices_[node]) == 1) {
+      result.push_back(node);
+    }
+  }
+
+  return result;
+}
+
+Mesh Mesh::FlipOut(const std::vector<int> &path) const {
+  std::vector<Point> new_vertices = vertices_;
+  const auto size = static_cast<int>(path.size());
+  for (int i = 0; i < size - 2; ++i) {
+    Joint current_joint{.first = i, .second = i + 1, .third = i + 2};
+    auto beta_i = VerticesOnOneSideOfWedge(i, i + 1, i + 2);
+    beta_i.insert(beta_i.begin(), i);
+    beta_i.push_back(i + 2);
+    if (Angle(vertices_[current_joint.first], vertices_[beta_i[0]]) < M_PI) {
+      // flip second -> beta_i[0] to first beta_i[1]
+    }
+  }
+  return Mesh(new_vertices, triangles_);
 }
 
 } // namespace gp

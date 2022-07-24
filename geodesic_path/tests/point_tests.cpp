@@ -39,6 +39,8 @@ TEST(Point, Position) {
   const Point q{1, -2, 0};
   const Point r{15, 1, 0};
 
+  EXPECT_EQ(Position(a, b, a), 0);
+  EXPECT_EQ(Position(a, b, b), 0);
   EXPECT_EQ(Position(a, b, r), Position(a, b, p));
   EXPECT_NE(Position(a, b, p), Position(a, b, q));
   EXPECT_NE(Position(a, b, r), Position(a, b, q));
