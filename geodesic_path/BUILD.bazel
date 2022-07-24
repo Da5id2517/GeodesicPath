@@ -26,6 +26,7 @@ cc_test(
     srcs=[
         "tests/point_tests.cpp",
         "tests/mesh_tests.cpp",
+        "tests/edge_flip_tests.cpp"
     ],
     copts=["-std=c++17"] + NO_MERCY_FLAGS,
     linkstatic=True,

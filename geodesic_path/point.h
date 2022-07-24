@@ -47,6 +47,16 @@ inline Point Normalize(const Point &p) {
   const auto norm = Norm(p);
   return {.x = p.x / norm, .y = p.y / norm, .z = p.z / norm};
 }
+
+inline int Signum(double value) { return (0.0 < value) - (0.0 > value); }
+
+inline int Position(const Point &a, const Point &b, const Point &p) {
+  auto AB = ToVector(a, b);
+  auto AP = ToVector(a, p);
+  return Signum((AB.y * AP.z - AB.z * AP.y) - (AB.x * AP.z - AB.z * AP.x) +
+                (AB.x * AP.y - AB.y * AP.x));
+}
+
 } // namespace gp
 
 #endif // GEODESIC_PATH_POINT_H
